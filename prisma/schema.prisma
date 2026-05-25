@@ -1,0 +1,1564 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                  String         @id
+  name                String
+  email               String
+  emailVerified       Boolean        @default(false)
+  image               String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  phoneNumber         String?
+  phoneNumberVerified Boolean?
+  username            String?
+  displayUsername     String?
+  twoFactorEnabled    Boolean?       @default(false)
+  role                UserRole?
+  banned              Boolean?       @default(false)
+  banReason           String?
+  banExpires          DateTime?
+  aadhaarNumber       String?
+  sessions            Session[]
+  accounts            Account[]
+  twofactors          TwoFactor[]
+  addresses           UserAddress[]  @relation("UserAddress")
+  documents           UserDocument[] @relation("UserDocument")
+  shops               ShopManager[]    @relation("ShopManagerUser")
+  cards               Card[]         @relation("UserCard")
+  cardDiscounts       CardDiscount[] @relation("CardDiscountCreatedBy")
+
+  recharges             Recharge[]           @relation("RechargePerformedBy")
+  transactions          Transaction[]        @relation("TransactionUser")
+  transactionsCreatedBy Transaction[]        @relation("TransactionCreatedBy")
+  suppliersCreatedBy    Supplier[]           @relation("SupplierCreatedBy")
+  suppliersApprovedBy   Supplier[]           @relation("SupplierApprovedBy")
+  warehouses            WarehouseManager[]   @relation("WarehouseManagedBy")
+  products              Product[]            @relation("ProductCreatedBy")
+  categoryCommissions   CategoryCommission[] @relation("CategoryCommissionCreatedBy")
+  purchases             Purchase[]           @relation("PurchaseCreatedBy")
+  purchaseStatuses      PurchaseStatus[]     @relation("PurchaseStatusCreatedBy")
+  transfers             Transfer[]           @relation("TransferCreatedBy")
+  transferStatuses      TransferStatus[]     @relation("TransferStatusCreatedBy")
+  purchaseReturns       PurchaseReturn[]     @relation("PurchaseReturnCreatedBy")
+  shopStatuses          ShopStatus[]         @relation("ShopStatusCreatedBy")
+  cardStatuses          CardStatus[]         @relation("CardStatusCreatedBy")
+  warehouseStatuses     WarehouseStatus[]    @relation("WarehouseStatusCreatedBy")
+  userStatuses          UserStatus[]         @relation("UserStatus")
+  userStatusesCreatedBy UserStatus[]         @relation("UserStatusCreatedBy")
+  documentsCreatedBy    UserDocument[]       @relation("UserDocumentCreatedBy")
+  journals              Journal[]            @relation("JournalCreatedBy")
+  ledgerEntries         LedgerEntry[]        @relation("LedgerEntryCreatedBy")
+
+  @@unique([email])
+  @@unique([phoneNumber])
+  @@unique([username])
+  @@unique([aadhaarNumber])
+  @@map("user")
+  stockMovements StockMovement[] @relation("StockMovementCreatedBy")
+  purchaseReturnStatuses PurchaseReturnStatus[] @relation("PurchaseReturnStatusCreatedBy")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SHOP_MANAGER
+  WAREHOUSE_MANAGER
+}
+
+model Session {
+  id             String   @id
+  expiresAt      DateTime
+  token          String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  ipAddress      String?
+  userAgent      String?
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  impersonatedBy String?
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model TwoFactor {
+  id          String   @id
+  secret      String
+  backupCodes String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verified    Boolean? @default(true)
+
+  @@index([secret])
+  @@index([userId])
+  @@map("twoFactor")
+}
+
+model UserStatus {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation("UserStatus", fields: [userId], references: [id], onDelete: Cascade)
+  statusId  String
+  status    Status   @relation("UserStatus", fields: [statusId], references: [id], onDelete: Cascade)
+  isCurrent Boolean  @default(true)
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdById String
+  createdBy   User   @relation("UserStatusCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@unique([userId, statusId])
+  @@index([userId])
+  @@index([statusId])
+  @@index([createdById])
+}
+
+model UserAddress {
+  id        String  @id @default(uuid())
+  userId    String
+  addressId String
+  user      User    @relation("UserAddress", fields: [userId], references: [id], onDelete: Cascade)
+  address   Address @relation("UserAddress", fields: [addressId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isPrimary Boolean  @default(false)
+
+  @@unique([userId, addressId])
+  @@index([userId])
+  @@index([addressId])
+}
+
+model Address {
+  id          String @id @default(uuid())
+  addressLine String
+  city        String
+  state       String
+  postalCode  String
+  country     String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users      UserAddress[] @relation("UserAddress")
+  shops      Shop[]        @relation("ShopAddress")
+  suppliers  Supplier[]    @relation("SupplierAddress")
+  warehouses Warehouse[]   @relation("WarehouseAddress")
+
+  @@index([city])
+  @@index([state])
+  @@index([postalCode])
+}
+
+// =============================================================================
+// DOCUMENT & MEDIA
+// =============================================================================
+
+model UserDocument {
+  id      String       @id @default(uuid())
+  type    DocumentType
+  userId  String
+  user    User         @relation("UserDocument", fields: [userId], references: [id], onDelete: Cascade)
+  mediaId String
+  media   Media        @relation("UserDocumentMedia", fields: [mediaId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+  createdBy   User     @relation("UserDocumentCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@unique([userId, mediaId])
+  @@unique([userId, type, mediaId])
+  @@index([userId])
+  @@index([type])
+  @@index([mediaId])
+}
+
+enum DocumentType {
+  PHOTO
+  AADHAAR_FRONT
+  AADHAAR_BACK
+}
+
+model Media {
+  id   String    @id @default(uuid())
+  url  String    @unique
+  type MediaType
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  invoices       Invoice[]           @relation("InvoiceMedia")
+  transferItems  TransferItemMedia[] @relation("TransferItemMedia")
+  productMedia   ProductMedia[]      @relation("ProductMedia")
+  userDocuments  UserDocument[]      @relation("UserDocumentMedia")
+  shopMedia      ShopMedia[]         @relation("ShopMedia")
+  warehouseMedia WarehouseMedia[]    @relation("WarehouseMedia")
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+}
+
+// =============================================================================
+// SHOP
+// =============================================================================
+
+model ShopManager {
+  id     String @id @default(uuid())
+  userId String
+  shopId String
+  user   User   @relation("ShopManagerUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  shop Shop @relation("ShopManagerShop", fields: [shopId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  status ShopManagerStatus @default(ACTIVE)
+
+  @@unique([userId, shopId])
+  @@index([userId])
+  @@index([shopId])
+}
+
+enum ShopManagerStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+model ShopStatus {
+  id        String   @id @default(uuid())
+  shopId    String
+  shop      Shop     @relation("ShopStatus", fields: [shopId], references: [id], onDelete: Cascade)
+  statusId  String
+  status    Status   @relation("ShopStatus", fields: [statusId], references: [id], onDelete: Cascade)
+  isCurrent Boolean  @default(true)
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdById String
+  createdBy   User   @relation("ShopStatusCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, statusId])
+  @@index([shopId])
+  @@index([statusId])
+  @@index([createdById])
+}
+
+model Shop {
+  id          String      @id @default(uuid())
+  name        String
+  code        String      @unique
+  managers    ShopManager[] @relation("ShopManagerShop")
+  phone       String      @unique
+  email       String      @unique
+  description String?
+  media       ShopMedia[] @relation("ShopMedia")
+  // Soft delete
+  deletedAt   DateTime?
+
+  statuses ShopStatus[] @relation("ShopStatus")
+
+  addressId String
+  address   Address @relation("ShopAddress", fields: [addressId], references: [id], onDelete: Cascade)
+
+  categoryId String
+  category   ShopCategory @relation("ShopCategory", fields: [categoryId], references: [id], onDelete: Cascade)
+
+  stateGstId      String
+  stateGst        StateGst          @relation("ShopStateGst", fields: [stateGstId], references: [id], onDelete: Cascade)
+  workingDays     ShopWorkingDay[]  @relation("ShopWorkingDay")
+  workingHours    ShopWorkingHour[] @relation("ShopWorkingHour")
+  cards           Card[]            @relation("ShopCard")
+  rechargeRecords Recharge[]        @relation("RechargePerformedInShop")
+  transactions    Transaction[]     @relation("TransactionShop")
+  transfersFrom   Transfer[]        @relation("TransferFromShop")
+  transfersTo     Transfer[]        @relation("TransferToShop")
+  inventory       ShopInventory[]   @relation("ShopInventory")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([addressId])
+  @@index([deletedAt])
+  stockMovements StockMovement[] @relation("StockMovementShop")
+}
+
+model ShopMedia {
+  id      String @id @default(uuid())
+  shopId  String
+  shop    Shop   @relation("ShopMedia", fields: [shopId], references: [id], onDelete: Cascade)
+  mediaId String
+  media   Media  @relation("ShopMedia", fields: [mediaId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([shopId, mediaId])
+  @@index([shopId])
+  @@index([mediaId])
+}
+
+model ShopCategory {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  shops     Shop[]   @relation("ShopCategory")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model StateGst {
+  id        String   @id @default(uuid())
+  state     String   @unique
+  gstNumber String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  shops     Shop[]   @relation("ShopStateGst")
+}
+
+model ShopWorkingDay {
+  id           String     @id @default(uuid())
+  shopId       String
+  workingDayId String
+  shop         Shop       @relation("ShopWorkingDay", fields: [shopId], references: [id], onDelete: Cascade)
+  workingDay   WorkingDay @relation("WorkingDay", fields: [workingDayId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([shopId, workingDayId])
+  @@index([shopId])
+  @@index([workingDayId])
+}
+
+model WorkingDay {
+  id        String           @id @default(uuid())
+  day       String           @unique
+  shops     ShopWorkingDay[] @relation("WorkingDay")
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model ShopWorkingHour {
+  id     String @id @default(uuid())
+  shopId String
+  shop   Shop   @relation("ShopWorkingHour", fields: [shopId], references: [id], onDelete: Cascade)
+
+  // FIXED: Was DateTime — but open/close times repeat weekly so they're not
+  // absolute timestamps. Store as "HH:mm" strings (e.g. "09:00", "21:30").
+  openTime  String
+  closeTime String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([shopId])
+}
+
+// =============================================================================
+// CARD & RECHARGE
+// =============================================================================
+
+model CardStatus {
+  id        String   @id @default(uuid())
+  cardId    String
+  card      Card     @relation("CardStatus", fields: [cardId], references: [id], onDelete: Cascade)
+  statusId  String
+  status    Status   @relation("CardStatus", fields: [statusId], references: [id], onDelete: Cascade)
+  isCurrent Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  notes     String?
+
+  createdById String
+  createdBy   User   @relation("CardStatusCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@unique([cardId, statusId])
+  @@index([cardId])
+  @@index([statusId])
+  @@index([createdById])
+}
+
+model Card {
+  id         String   @id @default(uuid())
+  cardNumber String   @unique
+  cardHolder String
+  expiryDate DateTime
+  shopId     String
+  shop       Shop     @relation("ShopCard", fields: [shopId], references: [id], onDelete: Cascade)
+
+  points Decimal @default(0) @db.Decimal(10, 2)
+
+  userId   String
+  user     User         @relation("UserCard", fields: [userId], references: [id], onDelete: Cascade)
+  type     CardType     @default(STANDARD)
+  statuses CardStatus[] @relation("CardStatus")
+
+  // Soft delete
+  deletedAt DateTime?
+
+  recharge     Recharge[]           @relation("CardRecharge")
+  transactions TransactionPayment[] @relation("CardTransaction")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([shopId])
+  @@index([type])
+  @@index([deletedAt])
+}
+
+enum CardType {
+  STANDARD
+  PREMIUM
+  VIP
+}
+
+model CardDiscount {
+  id           String               @id @default(uuid())
+  cardType     CardType
+  type         CommissionType
+  amount       Decimal              @db.Decimal(10, 2)
+  isActive     Boolean              @default(true)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  createdById  String
+  createdBy    User                 @relation("CardDiscountCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  transactions TransactionPayment[] @relation("CardDiscount")
+}
+
+model RechargeExchangeRate {
+  id       String   @id @default(uuid())
+  cardType CardType @unique
+  points   Decimal  @db.Decimal(10, 2)
+  amount   Decimal  @db.Decimal(10, 2)
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  recharges Recharge[] @relation("RechargeExchangeRate")
+}
+
+model Recharge {
+  id                     String               @id @default(uuid())
+  cardId                 String
+  card                   Card                 @relation("CardRecharge", fields: [cardId], references: [id], onDelete: Cascade)
+  rechargeExchangeRateId String
+  rechargeExchangeRate   RechargeExchangeRate @relation("RechargeExchangeRate", fields: [rechargeExchangeRateId], references: [id], onDelete: Cascade)
+  amount                 Decimal              @db.Decimal(10, 2)
+  points                 Decimal              @db.Decimal(10, 2)
+  rechargeById           String
+  rechargeBy             User                 @relation("RechargePerformedBy", fields: [rechargeById], references: [id], onDelete: Cascade)
+  shopId                 String
+  shop                   Shop                 @relation("RechargePerformedInShop", fields: [shopId], references: [id], onDelete: Cascade)
+
+  payment RechargePayment[] @relation("PaymentRecharge")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([cardId])
+  @@index([shopId])
+  @@index([rechargeById])
+  @@index([rechargeExchangeRateId])
+}
+
+model RechargePayment {
+  id              String                   @id @default(uuid())
+  orderId         String                   @unique
+  amount          Decimal                  @db.Decimal(10, 2)
+  paymentProvider RechargePaymentProvider? @relation("PaymentProvider")
+  status          PaymentStatus            @default(PENDING)
+  rechargeId      String
+  recharge        Recharge                 @relation("PaymentRecharge", fields: [rechargeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([rechargeId])
+  @@index([status])
+}
+
+model RechargePaymentProvider {
+  id                String          @id @default(uuid())
+  provider          Provider
+  providerPaymentId String
+  paymentId         String          @unique
+  payment           RechargePayment @relation("PaymentProvider", fields: [paymentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerPaymentId])
+  @@index([provider])
+}
+
+enum Provider {
+  RAZORPAY
+  PHONEPE
+  STRIPE
+  PAYU
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+// =============================================================================
+// TRANSACTION
+// =============================================================================
+
+model Transaction {
+  id               String  @id @default(uuid())
+  totalAmount      Decimal @default(0) @db.Decimal(10, 2)
+  commissionAmount Decimal @default(0) @db.Decimal(10, 2)
+  shopId           String
+  shop             Shop    @relation("TransactionShop", fields: [shopId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User    @relation("TransactionUser", fields: [userId], references: [id], onDelete: Cascade)
+  createdById      String
+  createdBy        User    @relation("TransactionCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  items    TransactionItem[]    @relation("TransactionItem")
+  payments TransactionPayment[] @relation("TransactionPayment")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([shopId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+enum PaymentMethod {
+  CARD
+  CASH
+  PAYMENT_GATEWAY
+}
+
+model TransactionItem {
+  id               String      @id @default(uuid())
+  transactionId    String
+  transaction      Transaction @relation("TransactionItem", fields: [transactionId], references: [id], onDelete: Cascade)
+  productId        String
+  product          Product     @relation("TransactionItemProduct", fields: [productId], references: [id], onDelete: Cascade)
+  purchaseId       String
+  purchase         Purchase    @relation("TransactionItemPurchase", fields: [purchaseId], references: [id], onDelete: Cascade)
+  shopBatchId      String
+  shopBatch        ShopBatch   @relation("TransactionItemShopBatch", fields: [shopBatchId], references: [id], onDelete: Cascade)
+  quantity         Int
+  costPrice        Decimal     @db.Decimal(10, 2)
+  salePrice        Decimal     @db.Decimal(10, 2)
+  commissionAmount Decimal     @db.Decimal(10, 2)
+
+  commissionId       String
+  categoryCommission CategoryCommission @relation("CategoryCommission", fields: [commissionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([transactionId])
+  @@index([productId])
+  @@index([purchaseId])
+  @@index([commissionId])
+}
+
+model TransactionPayment {
+  id              String                      @id @default(uuid())
+  paymentMethod   PaymentMethod
+  cardId          String?
+  card            Card?                       @relation("CardTransaction", fields: [cardId], references: [id], onDelete: Cascade)
+  orderId         String
+  amount          Decimal                     @db.Decimal(10, 2)
+  discountAmount  Decimal                     @default(0) @db.Decimal(10, 2)
+  cardDiscountId  String?
+  cardDiscount    CardDiscount?               @relation("CardDiscount", fields: [cardDiscountId], references: [id], onDelete: Cascade)
+  finalAmount     Decimal                     @db.Decimal(10, 2)
+  paymentProvider TransactionPaymentProvider? @relation("PaymentProvider")
+  status          PaymentStatus               @default(PENDING)
+  transactionId   String
+  transaction     Transaction                 @relation("TransactionPayment", fields: [transactionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([transactionId])
+  @@index([status])
+}
+
+model TransactionPaymentProvider {
+  id                   String             @id @default(uuid())
+  provider             Provider
+  paymentId            String
+  transactionPaymentId String             @unique
+  payment              TransactionPayment @relation("PaymentProvider", fields: [transactionPaymentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, paymentId])
+  @@index([provider])
+}
+
+model Supplier {
+  id          String    @id @default(uuid())
+  name        String
+  code        String    @unique
+  email       String    @unique
+  phone       String    @unique
+  companyName String
+  // Soft delete
+  deletedAt   DateTime?
+
+  addressId String
+  address   Address @relation("SupplierAddress", fields: [addressId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User   @relation("SupplierCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  // FIXED: Was String (required) but relation was User? — must be nullable
+  approvedById String?
+  approvedBy   User?   @relation("SupplierApprovedBy", fields: [approvedById], references: [id], onDelete: Cascade)
+
+  products  ProductSupplier[] @relation("ProductSupplier")
+  purchases Purchase[]        @relation("PurchaseSupplier")
+  returns   PurchaseReturn[]  @relation("PurchaseReturnSupplier")
+
+  status SupplierStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([approvedById])
+  @@index([addressId])
+  @@index([deletedAt])
+}
+
+enum SupplierStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  BLOCKED
+  DELETED
+}
+
+model WarehouseManager {
+  id          String    @id @default(uuid())
+  userId      String
+  warehouseId String
+  user        User      @relation("WarehouseManagedBy", fields: [userId], references: [id], onDelete: Cascade)
+  warehouse   Warehouse @relation("WarehouseManagedBy", fields: [warehouseId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  status WarehouseManagerStatus @default(ACTIVE)
+
+  @@unique([userId, warehouseId])
+  @@index([userId])
+  @@index([warehouseId])
+}
+
+enum WarehouseManagerStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+model WarehouseStatus {
+  id          String    @id @default(uuid())
+  warehouseId String
+  warehouse   Warehouse @relation("WarehouseStatus", fields: [warehouseId], references: [id], onDelete: Cascade)
+  statusId    String
+  status      Status    @relation("WarehouseStatus", fields: [statusId], references: [id], onDelete: Cascade)
+  isCurrent   Boolean   @default(true)
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  createdById String
+  createdBy   User   @relation("WarehouseStatusCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@unique([warehouseId, statusId])
+  @@index([warehouseId])
+  @@index([statusId])
+  @@index([createdById])
+}
+
+model WarehouseMedia {
+  id          String    @id @default(uuid())
+  warehouseId String
+  warehouse   Warehouse @relation("WarehouseMedia", fields: [warehouseId], references: [id], onDelete: Cascade)
+  mediaId     String
+  media       Media     @relation("WarehouseMedia", fields: [mediaId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([warehouseId, mediaId])
+  @@index([warehouseId])
+  @@index([mediaId])
+}
+
+model Warehouse {
+  id          String    @id @default(uuid())
+  name        String
+  code        String    @unique
+  email       String    @unique
+  phone       String    @unique
+  description String?
+  // Soft delete
+  deletedAt   DateTime?
+
+  addressId String
+  address   Address @relation("WarehouseAddress", fields: [addressId], references: [id], onDelete: Cascade)
+
+  managers WarehouseManager[] @relation("WarehouseManagedBy")
+  media    WarehouseMedia[]   @relation("WarehouseMedia")
+
+  purchases             Purchase[]           @relation("PurchaseWarehouse")
+  inventory             WarehouseInventory[] @relation("WarehouseInventory")
+  transferFromWarehouse Transfer[]           @relation("TransferFromWarehouse")
+  transferToWarehouse   Transfer[]           @relation("TransferToWarehouse")
+  returns               PurchaseReturn[]     @relation("PurchaseReturnWarehouse")
+  statuses              WarehouseStatus[]    @relation("WarehouseStatus")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([addressId])
+  @@index([deletedAt])
+  stockMovements StockMovement[] @relation("StockMovementWarehouse")
+}
+
+// =============================================================================
+// PRODUCT CATALOGUE
+// =============================================================================
+
+model Product {
+  id          String    @id @default(uuid())
+  name        String
+  sku         String    @unique
+  description String
+  unitType    UnitType
+  unitValue   Decimal   @db.Decimal(10, 2)
+  // Soft delete
+  deletedAt   DateTime?
+
+  mrp Decimal @db.Decimal(10, 2)
+
+  categoryId     String
+  category       Category     @relation("ProductCategory", fields: [categoryId], references: [id], onDelete: Cascade)
+  brandId        String
+  brand          Brand        @relation("ProductBrand", fields: [brandId], references: [id], onDelete: Cascade)
+  manufacturerId String
+  manufacturer   Manufacturer @relation("ProductManufacturer", fields: [manufacturerId], references: [id], onDelete: Cascade)
+
+  purchaseItems        PurchaseItem[]       @relation("PurchaseItemProduct")
+  suppliers            ProductSupplier[]    @relation("ProductSupplier")
+  warehouseInventories WarehouseInventory[] @relation("WarehouseInventoryProduct")
+  transferItems        TransferItem[]       @relation("TransferItemProduct")
+  shopInventories      ShopInventory[]      @relation("ShopInventoryProduct")
+  media                ProductMedia[]       @relation("ProductMedia")
+  transactions         TransactionItem[]    @relation("TransactionItemProduct")
+  returns              PurchaseReturnItem[] @relation("PurchaseReturnItemProduct")
+  dimensionId          String
+  dimension            Dimension            @relation("ProductDimension", fields: [dimensionId], references: [id], onDelete: Cascade)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  createdById          String
+  createdBy            User                 @relation("ProductCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([manufacturerId])
+  @@index([deletedAt])
+  stockMovements StockMovement[] @relation("StockMovementProduct")
+}
+
+model Dimension {
+  id            String        @id @default(uuid())
+  dimensionUnit DimensionUnit
+  length        Decimal       @db.Decimal(10, 2)
+  width         Decimal       @db.Decimal(10, 2)
+  height        Decimal       @db.Decimal(10, 2)
+  weightUnit    WeightUnit
+  weight        Decimal       @db.Decimal(10, 2)
+  product       Product[]     @relation("ProductDimension")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+enum DimensionUnit {
+  CENTIMETER
+  METER
+  INCH
+  FOOT
+}
+
+enum WeightUnit {
+  GRAM
+  KILOGRAM
+  POUND
+  OUNCE
+}
+
+model ProductMedia {
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation("ProductMedia", fields: [productId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     Media   @relation("ProductMedia", fields: [mediaId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, mediaId])
+  @@index([productId])
+  @@index([mediaId])
+}
+
+model ProductSupplier {
+  id         String   @id @default(uuid())
+  productId  String
+  product    Product  @relation("ProductSupplier", fields: [productId], references: [id], onDelete: Cascade)
+  supplierId String
+  supplier   Supplier @relation("ProductSupplier", fields: [supplierId], references: [id], onDelete: Cascade)
+  costPrice  Decimal  @db.Decimal(10, 2)
+  salePrice  Decimal  @db.Decimal(10, 2)
+  isActive   Boolean  @default(true)
+
+  purchaseItems PurchaseItem[] @relation("PurchaseItemProductSupplier")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@index([supplierId])
+  @@index([isActive])
+}
+
+enum UnitType {
+  PIECE
+  KILOGRAM
+  LITER
+  METER
+  SQUARE_METER
+  CUBIC_METER
+  PACK
+  BOX
+  DOZEN
+}
+
+model Category {
+  id       String     @id @default(uuid())
+  name     String
+  parentId String?
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+
+  products    Product[]            @relation("ProductCategory")
+  commissions CategoryCommission[] @relation("CategoryCommission")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, parentId])
+  @@index([parentId])
+}
+
+model Brand {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  products  Product[] @relation("ProductBrand")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Manufacturer {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  products  Product[] @relation("ProductManufacturer")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model CategoryCommission {
+  id         String         @id @default(uuid())
+  categoryId String
+  category   Category       @relation("CategoryCommission", fields: [categoryId], references: [id], onDelete: Cascade)
+  type       CommissionType
+  amount     Decimal        @db.Decimal(10, 2)
+  isActive   Boolean        @default(true)
+
+  transactions TransactionItem[] @relation("CategoryCommission")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+  createdBy   User     @relation("CategoryCommissionCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+}
+
+enum CommissionType {
+  FIXED
+  PERCENTAGE
+}
+
+// =============================================================================
+// PURCHASE
+// =============================================================================
+
+model Purchase {
+  id           String    @id @default(uuid())
+  supplierId   String
+  supplier     Supplier  @relation("PurchaseSupplier", fields: [supplierId], references: [id], onDelete: Cascade)
+  warehouseId  String
+  warehouse    Warehouse @relation("PurchaseWarehouse", fields: [warehouseId], references: [id], onDelete: Cascade)
+  purchaseDate DateTime  @default(now())
+  totalAmount  Decimal   @db.Decimal(10, 2)
+
+  items            PurchaseItem[]    @relation("PurchaseItem")
+  invoice          Invoice?          @relation("InvoicePurchase")
+  warehouseBatches WarehouseBatch[]  @relation("WarehouseInventoryPurchase")
+  statuses         PurchaseStatus[]  @relation("PurchaseStatus")
+  transfers        TransferItem[]    @relation("TransferItemPurchase")
+  shopBatches      ShopBatch[]       @relation("ShopInventoryPurchase")
+  transactions     TransactionItem[] @relation("TransactionItemPurchase")
+  returns          PurchaseReturn[]  @relation("PurchaseReturn")
+
+  createdById String
+  createdBy   User   @relation("PurchaseCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([supplierId])
+  @@index([warehouseId])
+  @@index([purchaseDate])
+}
+
+model PurchaseItem {
+  id                String          @id @default(uuid())
+  purchaseId        String
+  productSupplierId String
+  productSupplier   ProductSupplier @relation("PurchaseItemProductSupplier", fields: [productSupplierId], references: [id], onDelete: Cascade)
+  purchase          Purchase        @relation("PurchaseItem", fields: [purchaseId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product         @relation("PurchaseItemProduct", fields: [productId], references: [id], onDelete: Cascade)
+  quantity          Int
+  receivedQuantity  Int             @default(0)
+  damageQuantity    Int             @default(0)
+  costPrice         Decimal         @db.Decimal(10, 2)
+  salePrice         Decimal         @db.Decimal(10, 2)
+
+  @@index([purchaseId])
+  @@index([productId])
+}
+
+model PurchaseStatus {
+  id         String   @id @default(uuid())
+  purchaseId String
+  // BUGFIX: Was `@unique` — that allows only ONE status record per purchase,
+  // making isCurrent + history impossible. Removed; use @@unique below for
+  // preventing duplicate state entries.
+  purchase   Purchase @relation("PurchaseStatus", fields: [purchaseId], references: [id], onDelete: Cascade)
+  statusId   String
+  status     Status   @relation("PurchaseStatus", fields: [statusId], references: [id], onDelete: Cascade)
+  isCurrent  Boolean  @default(true)
+  notes      String?
+
+  createdById String
+  createdBy   User   @relation("PurchaseStatusCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Prevents the same status being set twice on the same purchase
+  @@unique([purchaseId, statusId])
+  @@index([purchaseId])
+  @@index([statusId])
+  @@index([purchaseId, isCurrent])
+}
+
+model Invoice {
+  id            String   @id @default(uuid())
+  invoiceNumber String   @unique
+  mediaId       String
+  media         Media    @relation("InvoiceMedia", fields: [mediaId], references: [id], onDelete: Cascade)
+  purchaseId    String   @unique
+  purchase      Purchase @relation("InvoicePurchase", fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([mediaId])
+}
+
+// =============================================================================
+// STATUS (shared lookup table)
+// =============================================================================
+
+model Status {
+  id   String     @id @default(uuid())
+  name StatusType @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchaseStatuses  PurchaseStatus[]       @relation("PurchaseStatus")
+  transferStatuses  TransferStatus[]       @relation("TransferStatus")
+  purchaseReturns   PurchaseReturnStatus[] @relation("PurchaseReturnStatus")
+  cardStatuses      CardStatus[]           @relation("CardStatus")
+  warehouseStatuses WarehouseStatus[]      @relation("WarehouseStatus")
+  shopStatuses      ShopStatus[]           @relation("ShopStatus")
+
+  userStatuses UserStatus[] @relation("UserStatus")
+}
+
+enum StatusType {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  CONFIRMED
+  PROCESSING
+  PACKED
+  DISPATCHED
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  FAILED
+  RETURN_REQUESTED
+  RETURNED
+  REFUNDED
+  RECEIVED
+  PARTIALLY_RECEIVED
+
+  // warehouse/shop specific statuses
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+// =============================================================================
+// WAREHOUSE INVENTORY
+// =============================================================================
+
+model WarehouseInventory {
+  id                      String    @id @default(uuid())
+  warehouseId             String
+  warehouse               Warehouse @relation("WarehouseInventory", fields: [warehouseId], references: [id], onDelete: Cascade)
+  productId               String
+  product                 Product   @relation("WarehouseInventoryProduct", fields: [productId], references: [id], onDelete: Cascade)
+  // purchaseId tracks which purchase batch this inventory row came from
+  // (useful for FIFO/lot tracking & returns)
+  quantity                Int
+  damageQuantity          Int       @default(0)
+  reservedQuantity        Int       @default(0)
+  inTransitQuantity       Int       @default(0)
+  damageReservedQuantity  Int       @default(0)
+  inTransitDamageQuantity Int       @default(0)
+  maxQuantity             Int       @default(500)
+  minQuantity             Int       @default(10)
+
+  batches WarehouseBatch[] @relation("WarehouseInventoryPurchase")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Prevents duplicate lot rows for the same warehouse+product+purchase batch
+  @@unique([warehouseId, productId])
+  @@index([warehouseId])
+  @@index([productId])
+}
+
+model WarehouseBatch {
+  id                      String               @id @default(uuid())
+  purchaseId              String
+  purchase                Purchase             @relation("WarehouseInventoryPurchase", fields: [purchaseId], references: [id], onDelete: Cascade)
+  inventoryId             String
+  inventory               WarehouseInventory   @relation("WarehouseInventoryPurchase", fields: [inventoryId], references: [id], onDelete: Cascade)
+  quantity                Int
+  damageQuantity          Int                  @default(0)
+  reservedQuantity        Int                  @default(0)
+  inTransitQuantity       Int                  @default(0)
+  damageReservedQuantity  Int                  @default(0)
+  inTransitDamageQuantity Int                  @default(0)
+  costPrice               Decimal              @db.Decimal(10, 2)
+  salePrice               Decimal              @db.Decimal(10, 2)
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
+  transferItems           TransferItem[]       @relation("TransferItemWarehouseBatch")
+  purchaseReturnItems     PurchaseReturnItem[] @relation("PurchaseReturnItemWarehouseBatch")
+
+  @@index([purchaseId])
+  @@index([inventoryId])
+  stockMovements StockMovement[] @relation("StockMovementWarehouseBatch")
+}
+
+// =============================================================================
+// TRANSFER
+// =============================================================================
+
+model Transfer {
+  id   String         @id @default(uuid())
+  type TransferType
+  from TransferEntity
+  to   TransferEntity
+
+  fromWarehouseId String?
+  fromWarehouse   Warehouse? @relation("TransferFromWarehouse", fields: [fromWarehouseId], references: [id], onDelete: Cascade)
+  toWarehouseId   String?
+  toWarehouse     Warehouse? @relation("TransferToWarehouse", fields: [toWarehouseId], references: [id], onDelete: Cascade)
+  fromShopId      String?
+  fromShop        Shop?      @relation("TransferFromShop", fields: [fromShopId], references: [id], onDelete: Cascade)
+  toShopId        String?
+  toShop          Shop?      @relation("TransferToShop", fields: [toShopId], references: [id], onDelete: Cascade)
+
+  items    TransferItem[]   @relation("TransferItem")
+  statuses TransferStatus[] @relation("TransferStatus")
+
+  createdById String
+  createdBy   User   @relation("TransferCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fromWarehouseId])
+  @@index([toWarehouseId])
+  @@index([fromShopId])
+  @@index([toShopId])
+  @@index([type])
+}
+
+enum TransferType {
+  RETURN
+  TRANSFER
+  DAMAGE
+}
+
+enum TransferEntity {
+  WAREHOUSE
+  SHOP
+}
+
+model TransferItem {
+  id                        String          @id @default(uuid())
+  transferId                String
+  transfer                  Transfer        @relation("TransferItem", fields: [transferId], references: [id], onDelete: Cascade)
+  shopInventoryBatchId      String?
+  shopInventoryBatch        ShopBatch?      @relation("TransferItemShopBatch", fields: [shopInventoryBatchId], references: [id], onDelete: Cascade)
+  warehouseInventoryBatchId String?
+  warehouseInventoryBatch   WarehouseBatch? @relation("TransferItemWarehouseBatch", fields: [warehouseInventoryBatchId], references: [id], onDelete: Cascade)
+  productId                 String
+  product                   Product         @relation("TransferItemProduct", fields: [productId], references: [id], onDelete: Cascade)
+  purchaseId                String
+  purchase                  Purchase        @relation("TransferItemPurchase", fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  quantity         Int
+  receivedQuantity Int     @default(0)
+  damageQuantity   Int     @default(0)
+  costPrice        Decimal @db.Decimal(10, 2)
+  salePrice        Decimal @db.Decimal(10, 2)
+
+  media TransferItemMedia[] @relation("TransferItemMedia")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([transferId])
+  @@index([productId])
+  @@index([purchaseId])
+}
+
+model TransferStatus {
+  id         String   @id @default(uuid())
+  transferId String
+  // BUGFIX: Was `@unique` on transferId — only allowed one status row per
+  // transfer, making history tracking impossible. Removed; use @@unique below.
+  transfer   Transfer @relation("TransferStatus", fields: [transferId], references: [id], onDelete: Cascade)
+  statusId   String
+  status     Status   @relation("TransferStatus", fields: [statusId], references: [id], onDelete: Cascade)
+  isCurrent  Boolean  @default(true)
+  notes      String?
+
+  createdById String
+  createdBy   User   @relation("TransferStatusCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([transferId, statusId])
+  @@index([transferId])
+  @@index([statusId])
+  @@index([transferId, isCurrent])
+}
+
+model TransferItemMedia {
+  id             String       @id @default(uuid())
+  transferItemId String
+  transferItem   TransferItem @relation("TransferItemMedia", fields: [transferItemId], references: [id], onDelete: Cascade)
+  mediaId        String
+  media          Media        @relation("TransferItemMedia", fields: [mediaId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([transferItemId, mediaId])
+  @@index([transferItemId])
+  @@index([mediaId])
+}
+
+// =============================================================================
+// SHOP INVENTORY
+// =============================================================================
+
+model ShopInventory {
+  id        String  @id @default(uuid())
+  shopId    String
+  shop      Shop    @relation("ShopInventory", fields: [shopId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation("ShopInventoryProduct", fields: [productId], references: [id], onDelete: Cascade)
+
+  quantity                Int
+  damageQuantity          Int @default(0)
+  reservedQuantity        Int @default(0)
+  inTransitQuantity       Int @default(0)
+  damageReservedQuantity  Int @default(0)
+  inTransitDamageQuantity Int @default(0)
+  maxQuantity             Int @default(500)
+  minQuantity             Int @default(10)
+
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  batches   ShopBatch[] @relation("ShopInventoryPurchase")
+
+  // Prevents duplicate lot rows for the same shop+product+purchase batch
+  @@unique([shopId, productId])
+  @@index([shopId])
+  @@index([productId])
+}
+
+model ShopBatch {
+  id                      String        @id @default(uuid())
+  purchaseId              String
+  purchase                Purchase      @relation("ShopInventoryPurchase", fields: [purchaseId], references: [id], onDelete: Cascade)
+  inventoryId             String
+  inventory               ShopInventory @relation("ShopInventoryPurchase", fields: [inventoryId], references: [id], onDelete: Cascade)
+  quantity                Int
+  receivedQuantity        Int           @default(0)
+  damageQuantity          Int           @default(0)
+  reservedQuantity        Int           @default(0)
+  inTransitQuantity       Int           @default(0)
+  damageReservedQuantity  Int           @default(0)
+  inTransitDamageQuantity Int           @default(0)
+
+  costPrice     Decimal           @db.Decimal(10, 2)
+  salePrice     Decimal           @db.Decimal(10, 2)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  transferItems TransferItem[]    @relation("TransferItemShopBatch")
+  transactions  TransactionItem[] @relation("TransactionItemShopBatch")
+
+  @@index([purchaseId])
+  @@index([inventoryId])
+  stockMovements StockMovement[] @relation("StockMovementShopBatch")
+}
+
+// =============================================================================
+// PURCHASE RETURN
+// =============================================================================
+
+model PurchaseReturn {
+  id          String               @id @default(uuid())
+  purchaseId  String
+  purchase    Purchase             @relation("PurchaseReturn", fields: [purchaseId], references: [id], onDelete: Cascade)
+  supplierId  String
+  supplier    Supplier             @relation("PurchaseReturnSupplier", fields: [supplierId], references: [id], onDelete: Cascade)
+  warehouseId String
+  warehouse   Warehouse            @relation("PurchaseReturnWarehouse", fields: [warehouseId], references: [id], onDelete: Cascade)
+  reason      PurchaseReturnReason
+  totalAmount Decimal              @db.Decimal(10, 2)
+  notes       String?
+
+  items       PurchaseReturnItem[]   @relation("PurchaseReturnItem")
+  status      PurchaseReturnStatus[] @relation("PurchaseReturnStatus")
+  createdById String
+  createdBy   User                   @relation("PurchaseReturnCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([purchaseId])
+  @@index([supplierId])
+  @@index([warehouseId])
+}
+
+enum PurchaseReturnReason {
+  DAMAGED
+  DEFECTIVE
+  WRONG_ITEM
+  OTHER
+}
+
+model PurchaseReturnItem {
+  id               String         @id @default(uuid())
+  purchaseReturnId String
+  purchaseReturn   PurchaseReturn @relation("PurchaseReturnItem", fields: [purchaseReturnId], references: [id], onDelete: Cascade)
+  productId        String
+  product          Product        @relation("PurchaseReturnItemProduct", fields: [productId], references: [id], onDelete: Cascade)
+  warehouseBatchId String
+  warehouseBatch   WarehouseBatch @relation("PurchaseReturnItemWarehouseBatch", fields: [warehouseBatchId], references: [id], onDelete: Cascade)
+  quantity         Int
+  receivedQuantity Int            @default(0)
+  damageQuantity   Int            @default(0)
+  costPrice        Decimal        @db.Decimal(10, 2)
+  salePrice        Decimal        @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([purchaseReturnId])
+  @@index([productId])
+}
+
+model PurchaseReturnStatus {
+  id               String         @id @default(uuid())
+  purchaseReturnId String
+  purchaseReturn   PurchaseReturn @relation("PurchaseReturnStatus", fields: [purchaseReturnId], references: [id], onDelete: Cascade)
+  statusId         String
+  status           Status         @relation("PurchaseReturnStatus", fields: [statusId], references: [id], onDelete: Cascade)
+  // ADDED: isCurrent was missing here (present on other status models)
+  isCurrent        Boolean        @default(true)
+  notes            String?
+
+  createdById String
+  createdBy   User   @relation("PurchaseReturnStatusCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([purchaseReturnId, statusId])
+  @@index([purchaseReturnId])
+  @@index([statusId])
+  @@index([purchaseReturnId, isCurrent])
+  @@index([createdById])
+}
+
+// =============================================================================
+//  LEDGER & JOURNAL
+// =============================================================================
+
+model LedgerAccount {
+  id          String     @id @default(uuid())
+  name        String
+  code        String     @unique
+  type        LedgerType
+  description String?
+
+  parentId String?
+  parent   LedgerAccount?  @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children LedgerAccount[] @relation("AccountHierarchy")
+
+  entries LedgerEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type])
+  @@index([parentId])
+}
+
+enum LedgerType {
+  ASSET
+  LIABILITY
+  INCOME
+  EXPENSE
+  EQUITY
+}
+
+model Journal {
+  id          String   @id @default(uuid())
+  date        DateTime // ← accounting date
+  description String?
+  isPosted    Boolean  @default(false) // ← draft vs posted
+
+  entries LedgerEntry[]
+
+  createdById String
+  createdBy   User   @relation("JournalCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+  @@index([createdById])
+}
+
+model LedgerEntry {
+  id String @id @default(uuid())
+
+  journalId String
+  journal   Journal @relation(fields: [journalId], references: [id], onDelete: Cascade)
+
+  ledgerAccountId String
+  ledgerAccount   LedgerAccount @relation(fields: [ledgerAccountId], references: [id], onDelete: Cascade)
+
+  debit  Decimal @default(0) @db.Decimal(10, 2)
+  credit Decimal @default(0) @db.Decimal(10, 2)
+
+  description String?
+
+  referenceType LedgerReferenceType
+  referenceId   String
+
+  createdById String
+  createdBy   User   @relation("LedgerEntryCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([journalId])
+  @@index([ledgerAccountId])
+  @@index([referenceType, referenceId])
+  @@index([createdById])
+}
+
+enum LedgerReferenceType {
+  RECHARGE
+  TRANSACTION
+  PURCHASE
+  PURCHASE_RETURN
+  TRANSFER
+}
+
+
+// =============================================================================
+//  STOCK MOVEMENT
+// =============================================================================
+
+enum StockMovementType {
+  PURCHASE_IN       // goods received from supplier into warehouse
+  TRANSFER_IN       // goods arriving at destination (warehouse or shop)
+  TRANSFER_OUT      // goods leaving source (warehouse or shop)
+  SALE              // goods sold via a transaction
+  RETURN_IN         // goods returned from shop back to warehouse
+  RETURN_OUT        // goods sent back to supplier (purchase return)
+  DAMAGE            // goods written off as damaged
+  ADJUSTMENT        // manual stock correction
+}
+
+enum StockBatchType {
+  WAREHOUSE
+  SHOP
+}
+
+enum StockReferenceType {
+  PURCHASE
+  TRANSFER
+  TRANSACTION
+  PURCHASE_RETURN
+}
+
+model StockMovement {
+  id   String            @id @default(uuid())
+  type StockMovementType
+
+  productId String
+  product   Product @relation("StockMovementProduct", fields: [productId], references: [id], onDelete: Cascade)
+
+  quantity       Int
+  beforeQuantity Int
+  afterQuantity  Int
+
+  // Exactly one of these pairs should be set (enforce via CHECK constraint)
+  warehouseId String?
+  warehouse   Warehouse? @relation("StockMovementWarehouse", fields: [warehouseId], references: [id], onDelete: Cascade)
+  shopId      String?
+  shop        Shop?      @relation("StockMovementShop", fields: [shopId], references: [id], onDelete: Cascade)
+
+  // Derived from which batch FK is set — can be omitted or kept for fast filtering
+  batchType        StockBatchType?
+  warehouseBatchId String?
+  warehouseBatch   WarehouseBatch? @relation("StockMovementWarehouseBatch", fields: [warehouseBatchId], references: [id], onDelete: Cascade)
+  shopBatchId      String?
+  shopBatch        ShopBatch?      @relation("StockMovementShopBatch", fields: [shopBatchId], references: [id], onDelete: Cascade)
+
+  referenceType StockReferenceType
+  referenceId   String
+
+  notes String?
+
+  createdById String
+  createdBy   User   @relation("StockMovementCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([warehouseId])
+  @@index([shopId])
+  @@index([referenceType, referenceId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("stock_movement")
+}
