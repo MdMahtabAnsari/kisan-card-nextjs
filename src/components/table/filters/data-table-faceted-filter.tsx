@@ -35,6 +35,7 @@ export function DataTableFacetedFilter<TData, TValue>({
     const selectedValues =
         (column?.getFilterValue() as string[]) ?? []
 
+
     return (
         <DropdownMenu>
 

@@ -3,6 +3,8 @@ import {userRouter} from "@/server/api/routers/admin/user";
 import { cardRouter } from "@/server/api/routers/admin/card";
 import { revenueRouter } from "@/server/api/routers/admin/revenue";
 import { shopRouter } from "@/server/api/routers/admin/shop";
+import {categoryRouter} from "@/server/api/routers/admin/category";
+import {gstRouter} from "@/server/api/routers/admin/gst";
 
 
 export const adminRouter = router({
@@ -11,4 +13,6 @@ export const adminRouter = router({
     card: cardRouter,
     revenue: revenueRouter,
     shop: shopRouter,
+    category: categoryRouter,
+    gst: gstRouter
 });

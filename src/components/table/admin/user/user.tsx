@@ -1,5 +1,5 @@
 "use client";
-import { columns } from "@/components/table/admin/user/column";
+import { getColumns } from "@/components/table/admin/user/column";
 import { api } from "@/trpc/react";
 import { DataTable } from "@/components/table/data.table";
 import { useState } from "react";
@@ -9,7 +9,9 @@ import { useCallback, useEffect } from "react";
 import { useDebounceCallback } from 'usehooks-ts'
 import { filterUserSchema } from "@/lib/schema/admin/user";
 import { SortOrder } from "@/lib/types/sort";
-import { UserRole } from "@/generated/prisma/browser";
+import { StatusType, UserRole } from "@/generated/prisma/browser";
+import { UserStatusUpdateSchema } from "@/lib/schema/common/user";
+import { toast } from "sonner";
 
 export function UserTable() {
     const [page, setPage] = useState(1);
@@ -28,6 +30,8 @@ export function UserTable() {
     const [banned, setBanned] = useState<boolean | undefined>(undefined);
     const [createdAt, setCreatedAt] = useState<SortOrder | undefined>(undefined);
 
+    const [status, setStatus] = useState<StatusType[] | undefined>(undefined);
+
 
 
 
@@ -42,6 +46,7 @@ export function UserTable() {
             emailVerified,
             phoneNumberVerified,
             banned,
+            status,
             createdAt
         },
         {
@@ -51,10 +56,32 @@ export function UserTable() {
                 email,
                 role,
                 search: debouncedSearchTerm.trim() === '' ? undefined : debouncedSearchTerm,
+                status,
                 createdAt
             }).success
         }
     );
+
+    const statusUpdateMutation = api.admin.user.updateUserStatus.useMutation({
+        onSuccess: () => {
+            refetch();
+        }
+    })
+
+    const onStatusUpdate = useCallback((values: UserStatusUpdateSchema) => {
+
+        toast.promise(
+            statusUpdateMutation.mutateAsync(values),
+            {
+                loading: 'Updating user status...',
+                success: 'User status updated successfully!',
+                error: (err) => `Failed to update user status: ${err.message}`,
+            }
+        );
+
+    }, [statusUpdateMutation])
+
+    const columns = getColumns({ onStatusUpdate });
 
     const handleSortingChange = useCallback((newSorting: SortingState) => {
         setSorting(newSorting);
@@ -96,60 +123,71 @@ export function UserTable() {
         }
     }, []);
 
-   const handleFilterChange = useCallback(
-    (states: ColumnFiltersState) => {
-        setColumnFilters(states);
+    const handleFilterChange = useCallback(
+        (states: ColumnFiltersState) => {
+            setColumnFilters(states);
 
-        setRoles(undefined);
-        setEmailVerified(undefined);
-        setPhoneNumberVerified(undefined);
-        setBanned(undefined);
+            setRoles(undefined);
+            setEmailVerified(undefined);
+            setPhoneNumberVerified(undefined);
+            setBanned(undefined);
+            setStatus(undefined);
 
-        states.forEach((state) => {
-            switch (state.id) {
-                case "role":
-                    setRoles(
-                        state.value
-                            ? (Array.isArray(state.value)
-                                  ? state.value
-                                  : [state.value]) as UserRole[]
-                            : undefined
-                    );
-                    break;
+            states.forEach((state) => {
+                switch (state.id) {
+                    case "role":
+                        setRoles(
+                            state.value
+                                ? (Array.isArray(state.value)
+                                    ? state.value
+                                    : [state.value]) as UserRole[]
+                                : undefined
+                        );
+                        break;
 
-                case "emailVerified":
-                    setEmailVerified(
-                        typeof state.value === "boolean"
-                            ? state.value
-                            : undefined
-                    );
-                    break;
+                    case "emailVerified":
+                        setEmailVerified(
+                            typeof state.value === "boolean"
+                                ? state.value
+                                : undefined
+                        );
+                        break;
 
-                case "phoneNumberVerified":
-                    setPhoneNumberVerified(
-                        typeof state.value === "boolean"
-                            ? state.value
-                            : undefined
-                    );
-                    break;
+                    case "phoneNumberVerified":
+                        setPhoneNumberVerified(
+                            typeof state.value === "boolean"
+                                ? state.value
+                                : undefined
+                        );
+                        break;
 
-                case "banned":
-                    setBanned(
-                        typeof state.value === "boolean"
-                            ? state.value
-                            : undefined
-                    );
-                    break;
+                    case "banned":
+                        setBanned(
+                            typeof state.value === "boolean"
+                                ? state.value
+                                : undefined
+                        );
+                        break;
 
-                default:
-                    break;
-            }
-        });
+                    case "userStatuses":
+                        setStatus(
+                            state.value
+                                ? (Array.isArray(state.value)
+                                    ? state.value
+                                    : [state.value]) as StatusType[]
+                                : undefined
+                        );
+                        break;
 
-        setPage(1);
-    },
-    []
-);
+                    default:
+                        break;
+                }
+            });
+
+            setPage(1);
+        },
+        []
+    );
     useEffect(() => {
         debounceSearch(searchTerm)
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -173,7 +211,7 @@ export function UserTable() {
     return (
         <DataTable
             columns={columns}
-            data={data?.users  || []}
+            data={data?.users || []}
             pagination={data?.pagination ?? {
                 currentPage: page,
                 limit: limit,

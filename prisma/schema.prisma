@@ -35,39 +35,39 @@ model User {
   twofactors          TwoFactor[]
   addresses           UserAddress[]  @relation("UserAddress")
   documents           UserDocument[] @relation("UserDocument")
-  shops               ShopManager[]    @relation("ShopManagerUser")
+  shops               ShopManager[]  @relation("ShopManagerUser")
   cards               Card[]         @relation("UserCard")
   cardDiscounts       CardDiscount[] @relation("CardDiscountCreatedBy")
 
-  recharges             Recharge[]           @relation("RechargePerformedBy")
-  transactions          Transaction[]        @relation("TransactionUser")
-  transactionsCreatedBy Transaction[]        @relation("TransactionCreatedBy")
-  suppliersCreatedBy    Supplier[]           @relation("SupplierCreatedBy")
-  suppliersApprovedBy   Supplier[]           @relation("SupplierApprovedBy")
-  warehouses            WarehouseManager[]   @relation("WarehouseManagedBy")
-  products              Product[]            @relation("ProductCreatedBy")
-  categoryCommissions   CategoryCommission[] @relation("CategoryCommissionCreatedBy")
-  purchases             Purchase[]           @relation("PurchaseCreatedBy")
-  purchaseStatuses      PurchaseStatus[]     @relation("PurchaseStatusCreatedBy")
-  transfers             Transfer[]           @relation("TransferCreatedBy")
-  transferStatuses      TransferStatus[]     @relation("TransferStatusCreatedBy")
-  purchaseReturns       PurchaseReturn[]     @relation("PurchaseReturnCreatedBy")
-  shopStatuses          ShopStatus[]         @relation("ShopStatusCreatedBy")
-  cardStatuses          CardStatus[]         @relation("CardStatusCreatedBy")
-  warehouseStatuses     WarehouseStatus[]    @relation("WarehouseStatusCreatedBy")
-  userStatuses          UserStatus[]         @relation("UserStatus")
-  userStatusesCreatedBy UserStatus[]         @relation("UserStatusCreatedBy")
-  documentsCreatedBy    UserDocument[]       @relation("UserDocumentCreatedBy")
-  journals              Journal[]            @relation("JournalCreatedBy")
-  ledgerEntries         LedgerEntry[]        @relation("LedgerEntryCreatedBy")
+  recharges              Recharge[]             @relation("RechargePerformedBy")
+  transactions           Transaction[]          @relation("TransactionUser")
+  transactionsCreatedBy  Transaction[]          @relation("TransactionCreatedBy")
+  suppliersCreatedBy     Supplier[]             @relation("SupplierCreatedBy")
+  suppliersApprovedBy    Supplier[]             @relation("SupplierApprovedBy")
+  warehouses             WarehouseManager[]     @relation("WarehouseManagedBy")
+  products               Product[]              @relation("ProductCreatedBy")
+  categoryCommissions    CategoryCommission[]   @relation("CategoryCommissionCreatedBy")
+  purchases              Purchase[]             @relation("PurchaseCreatedBy")
+  purchaseStatuses       PurchaseStatus[]       @relation("PurchaseStatusCreatedBy")
+  transfers              Transfer[]             @relation("TransferCreatedBy")
+  transferStatuses       TransferStatus[]       @relation("TransferStatusCreatedBy")
+  purchaseReturns        PurchaseReturn[]       @relation("PurchaseReturnCreatedBy")
+  shopStatuses           ShopStatus[]           @relation("ShopStatusCreatedBy")
+  cardStatuses           CardStatus[]           @relation("CardStatusCreatedBy")
+  warehouseStatuses      WarehouseStatus[]      @relation("WarehouseStatusCreatedBy")
+  userStatuses           UserStatus[]           @relation("UserStatus")
+  userStatusesCreatedBy  UserStatus[]           @relation("UserStatusCreatedBy")
+  documentsCreatedBy     UserDocument[]         @relation("UserDocumentCreatedBy")
+  journals               Journal[]              @relation("JournalCreatedBy")
+  ledgerEntries          LedgerEntry[]          @relation("LedgerEntryCreatedBy")
+  stockMovements         StockMovement[]        @relation("StockMovementCreatedBy")
+  purchaseReturnStatuses PurchaseReturnStatus[] @relation("PurchaseReturnStatusCreatedBy")
 
   @@unique([email])
   @@unique([phoneNumber])
   @@unique([username])
   @@unique([aadhaarNumber])
   @@map("user")
-  stockMovements StockMovement[] @relation("StockMovementCreatedBy")
-  purchaseReturnStatuses PurchaseReturnStatus[] @relation("PurchaseReturnStatusCreatedBy")
 }
 
 enum UserRole {
@@ -222,7 +222,6 @@ model UserDocument {
 }
 
 enum DocumentType {
-  PHOTO
   AADHAAR_FRONT
   AADHAAR_BACK
 }
@@ -298,14 +297,14 @@ model ShopStatus {
 }
 
 model Shop {
-  id          String      @id @default(uuid())
+  id          String        @id @default(uuid())
   name        String
-  code        String      @unique
+  code        String        @unique
   managers    ShopManager[] @relation("ShopManagerShop")
-  phone       String      @unique
-  email       String      @unique
+  phone       String        @unique
+  email       String        @unique
   description String?
-  media       ShopMedia[] @relation("ShopMedia")
+  media       ShopMedia[]   @relation("ShopMedia")
   // Soft delete
   deletedAt   DateTime?
 
@@ -315,26 +314,25 @@ model Shop {
   address   Address @relation("ShopAddress", fields: [addressId], references: [id], onDelete: Cascade)
 
   categoryId String
-  category   ShopCategory @relation("ShopCategory", fields: [categoryId], references: [id], onDelete: Cascade)
+  category   Category @relation("ShopCategory", fields: [categoryId], references: [id], onDelete: Cascade)
 
   stateGstId      String
-  stateGst        StateGst          @relation("ShopStateGst", fields: [stateGstId], references: [id], onDelete: Cascade)
-  workingDays     ShopWorkingDay[]  @relation("ShopWorkingDay")
-  workingHours    ShopWorkingHour[] @relation("ShopWorkingHour")
-  cards           Card[]            @relation("ShopCard")
-  rechargeRecords Recharge[]        @relation("RechargePerformedInShop")
-  transactions    Transaction[]     @relation("TransactionShop")
-  transfersFrom   Transfer[]        @relation("TransferFromShop")
-  transfersTo     Transfer[]        @relation("TransferToShop")
-  inventory       ShopInventory[]   @relation("ShopInventory")
+  stateGst        StateGst        @relation("ShopStateGst", fields: [stateGstId], references: [id], onDelete: Cascade)
+  cards           Card[]          @relation("ShopCard")
+  rechargeRecords Recharge[]      @relation("RechargePerformedInShop")
+  transactions    Transaction[]   @relation("TransactionShop")
+  transfersFrom   Transfer[]      @relation("TransferFromShop")
+  transfersTo     Transfer[]      @relation("TransferToShop")
+  inventory       ShopInventory[] @relation("ShopInventory")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  stockMovements   StockMovement[]   @relation("StockMovementShop")
+  shopWorkingHours ShopWorkingHour[] @relation("ShopWorkingHour")
 
   @@index([categoryId])
   @@index([addressId])
   @@index([deletedAt])
-  stockMovements StockMovement[] @relation("StockMovementShop")
 }
 
 model ShopMedia {
@@ -352,14 +350,6 @@ model ShopMedia {
   @@index([mediaId])
 }
 
-model ShopCategory {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  shops     Shop[]   @relation("ShopCategory")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 model StateGst {
   id        String   @id @default(uuid())
   state     String   @unique
@@ -369,43 +359,71 @@ model StateGst {
   shops     Shop[]   @relation("ShopStateGst")
 }
 
-model ShopWorkingDay {
-  id           String     @id @default(uuid())
-  shopId       String
-  workingDayId String
-  shop         Shop       @relation("ShopWorkingDay", fields: [shopId], references: [id], onDelete: Cascade)
-  workingDay   WorkingDay @relation("WorkingDay", fields: [workingDayId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([shopId, workingDayId])
-  @@index([shopId])
-  @@index([workingDayId])
-}
-
-model WorkingDay {
-  id        String           @id @default(uuid())
-  day       String           @unique
-  shops     ShopWorkingDay[] @relation("WorkingDay")
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-}
-
 model ShopWorkingHour {
-  id     String @id @default(uuid())
+  id String @id @default(uuid())
+
   shopId String
   shop   Shop   @relation("ShopWorkingHour", fields: [shopId], references: [id], onDelete: Cascade)
 
-  // FIXED: Was DateTime — but open/close times repeat weekly so they're not
-  // absolute timestamps. Store as "HH:mm" strings (e.g. "09:00", "21:30").
-  openTime  String
-  closeTime String
+  workingHourId String
+  workingHour   WorkingHour @relation("ShopWorkingHour", fields: [workingHourId], references: [id], onDelete: Cascade)
+
+  startTime String
+  endTime   String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([shopId, workingHourId])
   @@index([shopId])
+  @@index([workingHourId])
+}
+
+model WarehouseWorkingHour {
+  id String @id @default(uuid())
+
+  warehouseId String
+  warehouse   Warehouse @relation("WarehouseWorkingHour", fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  workingHourId String
+  workingHour   WorkingHour @relation("WarehouseWorkingHour", fields: [workingHourId], references: [id], onDelete: Cascade)
+
+  startTime String
+  endTime   String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([warehouseId, workingHourId])
+  @@index([warehouseId])
+  @@index([workingHourId])
+}
+
+enum WeekDay {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model WorkingHour {
+  id String @id @default(uuid())
+
+  day WeekDay
+
+  startTime  String
+  endTime    String
+  shops      ShopWorkingHour[]      @relation("ShopWorkingHour")
+  warehouses WarehouseWorkingHour[] @relation("WarehouseWorkingHour")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([day, startTime, endTime])
+  @@index([day])
 }
 
 // =============================================================================
@@ -780,12 +798,13 @@ model Warehouse {
   returns               PurchaseReturn[]     @relation("PurchaseReturnWarehouse")
   statuses              WarehouseStatus[]    @relation("WarehouseStatus")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  stockMovements        StockMovement[]        @relation("StockMovementWarehouse")
+  warehouseWorkingHours WarehouseWorkingHour[] @relation("WarehouseWorkingHour")
 
   @@index([addressId])
   @@index([deletedAt])
-  stockMovements StockMovement[] @relation("StockMovementWarehouse")
 }
 
 // =============================================================================
@@ -825,12 +844,12 @@ model Product {
   updatedAt            DateTime             @updatedAt
   createdById          String
   createdBy            User                 @relation("ProductCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  stockMovements       StockMovement[]      @relation("StockMovementProduct")
 
   @@index([categoryId])
   @@index([brandId])
   @@index([manufacturerId])
   @@index([deletedAt])
-  stockMovements StockMovement[] @relation("StockMovementProduct")
 }
 
 model Dimension {
@@ -916,6 +935,7 @@ model Category {
 
   products    Product[]            @relation("ProductCategory")
   commissions CategoryCommission[] @relation("CategoryCommission")
+  shops       Shop[]                 @relation("ShopCategory")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1150,10 +1170,10 @@ model WarehouseBatch {
   updatedAt               DateTime             @updatedAt
   transferItems           TransferItem[]       @relation("TransferItemWarehouseBatch")
   purchaseReturnItems     PurchaseReturnItem[] @relation("PurchaseReturnItemWarehouseBatch")
+  stockMovements          StockMovement[]      @relation("StockMovementWarehouseBatch")
 
   @@index([purchaseId])
   @@index([inventoryId])
-  stockMovements StockMovement[] @relation("StockMovementWarehouseBatch")
 }
 
 // =============================================================================
@@ -1313,16 +1333,16 @@ model ShopBatch {
   damageReservedQuantity  Int           @default(0)
   inTransitDamageQuantity Int           @default(0)
 
-  costPrice     Decimal           @db.Decimal(10, 2)
-  salePrice     Decimal           @db.Decimal(10, 2)
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  transferItems TransferItem[]    @relation("TransferItemShopBatch")
-  transactions  TransactionItem[] @relation("TransactionItemShopBatch")
+  costPrice      Decimal           @db.Decimal(10, 2)
+  salePrice      Decimal           @db.Decimal(10, 2)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  transferItems  TransferItem[]    @relation("TransferItemShopBatch")
+  transactions   TransactionItem[] @relation("TransactionItemShopBatch")
+  stockMovements StockMovement[]   @relation("StockMovementShopBatch")
 
   @@index([purchaseId])
   @@index([inventoryId])
-  stockMovements StockMovement[] @relation("StockMovementShopBatch")
 }
 
 // =============================================================================
@@ -1492,20 +1512,19 @@ enum LedgerReferenceType {
   TRANSFER
 }
 
-
 // =============================================================================
 //  STOCK MOVEMENT
 // =============================================================================
 
 enum StockMovementType {
-  PURCHASE_IN       // goods received from supplier into warehouse
-  TRANSFER_IN       // goods arriving at destination (warehouse or shop)
-  TRANSFER_OUT      // goods leaving source (warehouse or shop)
-  SALE              // goods sold via a transaction
-  RETURN_IN         // goods returned from shop back to warehouse
-  RETURN_OUT        // goods sent back to supplier (purchase return)
-  DAMAGE            // goods written off as damaged
-  ADJUSTMENT        // manual stock correction
+  PURCHASE_IN // goods received from supplier into warehouse
+  TRANSFER_IN // goods arriving at destination (warehouse or shop)
+  TRANSFER_OUT // goods leaving source (warehouse or shop)
+  SALE // goods sold via a transaction
+  RETURN_IN // goods returned from shop back to warehouse
+  RETURN_OUT // goods sent back to supplier (purchase return)
+  DAMAGE // goods written off as damaged
+  ADJUSTMENT // manual stock correction
 }
 
 enum StockBatchType {

@@ -1,9 +1,13 @@
 import { DB } from "@/lib/db/prisma";
 import { startOfMonth, endOfMonth, subMonths, startOfDay, endOfDay, subDays, format, isBefore, addDays } from "date-fns";
-import { DayEnum } from "@/lib/schema/day";
-import { FilterUserSchema } from "@/lib/schema/admin/user";
-import { PaginationSchema } from "@/lib/schema/page";
+import { DayEnum } from "@/lib/schema/common/day";
+import { FilterUserSchema, FilterUserInfiniteScrollSchema } from "@/lib/schema/admin/user";
+import { PaginationSchema } from "@/lib/schema/common/page";
 import { Prisma } from "@/generated/prisma/client";
+import { StatusType } from "@/generated/prisma/client";
+import { StatusService } from "@/services/common/status.service";
+import { InfiniteScrollWithSearch } from "@/lib/schema/common/page";
+import { CreateUserStatus } from "@/lib/types/user";
 
 export class UserService {
     private readonly db: DB;
@@ -167,7 +171,7 @@ export class UserService {
     }
 
     async getUsers(filter: FilterUserSchema) {
-        const { pageLimit, name, email, role, createdAt, search, roles, emailVerified, phoneNumberVerified, banned } = filter;
+        const { pageLimit, name, email, role, createdAt, search, roles, emailVerified, phoneNumberVerified, banned, status } = filter;
         const { page, limit } = pageLimit;
 
         const userCount = await this.db.user.count({
@@ -201,7 +205,17 @@ export class UserService {
                 }),
                 ...(banned !== undefined && {
                     banned
-                })
+                }),
+                ...(status !== undefined && {
+                    userStatuses: {
+                        some: {
+                            isCurrent: true,
+                            status: {
+                                name: { in: status }
+                            }
+                        }
+                    }
+                }),
 
 
             }
@@ -256,7 +270,27 @@ export class UserService {
                 }),
                 ...(banned !== undefined && {
                     banned
+                }),
+                ...(status !== undefined && {
+                    userStatuses: {
+                        some: {
+                            isCurrent: true,
+                            status: {
+                                name: { in: status }
+                            }
+                        }
+                    }
                 })
+            },
+            include: {
+                userStatuses: {
+                    where: {
+                        isCurrent: true
+                    },
+                    include: {
+                        status: true
+                    }
+                }
             },
             skip,
             take: limit,
@@ -266,5 +300,226 @@ export class UserService {
 
 
     }
-}
 
+    async createUserStatus(data: CreateUserStatus) {
+        const statusService = new StatusService(this.db);
+        const createdStatus = await statusService.createStatus(data.status);
+        return this.db.userStatus.create({
+            data: {
+                userId: data.userId,
+                statusId: createdStatus.id,
+                createdById: data.createdById,
+                notes: data.notes
+            }
+        });
+    }
+
+    async getUsersInfiniteScroll(filter: FilterUserInfiniteScrollSchema) {
+        const { cursor, limit, name, email, role, createdAt, search, roles, emailVerified, phoneNumberVerified, banned, status } = filter;
+
+        const limitPlusOne = limit ? limit + 1 : 11;
+
+        const orderBy: Prisma.UserOrderByWithRelationInput | undefined = (name || email || role || createdAt) && {
+            ...(name && { name: name }),
+            ...(email && { email: email }),
+            ...(role && { role: role }),
+            ...(createdAt && { createdAt: createdAt }),
+        }
+
+        const users = await this.db.user.findMany({
+            where: {
+                ...(search && {
+                    OR: [
+                        { id: { contains: search, mode: "insensitive" } },
+                        { name: { contains: search, mode: "insensitive" } },
+                        { email: { contains: search, mode: "insensitive" } },
+                        { phoneNumber: { contains: search, mode: "insensitive" } },
+                        { aadhaarNumber: { contains: search, mode: "insensitive" } },
+                        { username: { contains: search, mode: "insensitive" } },
+                        { displayUsername: { contains: search, mode: "insensitive" } },
+                    ]
+                }),
+                ...(roles && {
+                    role: {
+                        in: roles
+                    }
+                }),
+                ...(emailVerified !== undefined && {
+                    emailVerified
+                }),
+                ...(phoneNumberVerified !== undefined && {
+                    OR: phoneNumberVerified
+                        ? [{ phoneNumberVerified: true }]
+                        : [
+                            { phoneNumberVerified: false },
+                            { phoneNumberVerified: null },
+                        ],
+                }),
+                ...(banned !== undefined && {
+                    banned
+                }),
+                ...(status !== undefined && {
+                    userStatuses: {
+                        some: {
+                            isCurrent: true,
+                            status: {
+                                name: { in: status }
+                            }
+                        }
+                    }
+                })
+            },
+            include: {
+                userStatuses: {
+                    where: {
+                        isCurrent: true
+                    },
+                    include: {
+                        status: true
+                    }
+                }
+            },
+            ...(cursor && { cursor: { id: cursor } }),
+            take: limitPlusOne,
+            orderBy,
+        });
+
+        let nextCursor: typeof cursor | undefined = undefined;
+        if (users.length > (limitPlusOne - 1)) {
+            const nextItem = users.pop(); // return the last item from the array
+            nextCursor = nextItem!.id;
+        }
+        return {
+            users,
+            nextCursor
+        }
+
+
+    }
+
+    async getNonAssignedShopManagersInfiniteScroll(filter: InfiniteScrollWithSearch) {
+        const { cursor, limit, search } = filter;
+
+        const limitPlusOne = limit ? limit + 1 : 11;
+
+        const users = await this.db.user.findMany({
+            where: {
+                role: "SHOP_MANAGER",
+                shops: {
+                    none: {
+                        status: "ACTIVE"
+                    }
+                    
+                },
+                userStatuses: {
+                    some: {
+                        isCurrent: true,
+                        status: {
+                            name: StatusType.ACTIVE
+                        }
+                    }
+                },
+                ...(search && {
+                    OR: [
+                        { id: { contains: search, mode: "insensitive" } },
+                        { name: { contains: search, mode: "insensitive" } },
+                        { email: { contains: search, mode: "insensitive" } },
+                        { phoneNumber: { contains: search, mode: "insensitive" } },
+                        { aadhaarNumber: { contains: search, mode: "insensitive" } },
+                        { username: { contains: search, mode: "insensitive" } },
+                        { displayUsername: { contains: search, mode: "insensitive" } },
+                    ]
+                })
+            },
+            ...(cursor && { cursor: { id: cursor } }),
+            take: limitPlusOne,
+        });
+
+        let nextCursor: typeof cursor | undefined = undefined;
+        if (users.length > (limitPlusOne - 1)) {
+            const nextItem = users.pop(); // return the last item from the array
+            nextCursor = nextItem!.id;
+        }
+        return {
+            users,
+            nextCursor
+        }
+    }
+
+    async updateUserStatus(data: CreateUserStatus) {
+        const statusService = new StatusService(this.db);
+        const createdStatus = await statusService.createStatus(data.status);
+        await this.db.userStatus.updateMany({
+            where: {
+                userId: data.userId,
+                isCurrent: true
+            },
+            data: {
+                isCurrent: false
+            }
+        })
+        return this.db.userStatus.upsert({
+            where: {
+                userId_statusId: {
+                    userId: data.userId,
+                    statusId: createdStatus.id
+                }
+            },
+            create: {
+                userId: data.userId,
+                statusId: createdStatus.id,
+                notes: data.notes,
+                createdById: data.createdById
+            },
+            update: {
+                isCurrent:true,
+                notes: data.notes,
+                createdById: data.createdById
+            }
+        });
+    }
+    async getUsersWithoutActiveCardInfiniteScroll(filter: InfiniteScrollWithSearch) {
+        const { cursor, limit, search } = filter;
+        const limitPlusOne = limit ? limit + 1 : 11;
+        const users = await this.db.user.findMany({
+            where: {
+                role:"USER",
+                ...(search && {
+                    OR: [
+                        { id: { contains: search, mode: "insensitive" } },
+                        { name: { contains: search, mode: "insensitive" } },
+                        { email: { contains: search, mode: "insensitive" } },
+                        { phoneNumber: { contains: search, mode: "insensitive" } },
+                        { aadhaarNumber: { contains: search, mode: "insensitive" } },
+                        { username: { contains: search, mode: "insensitive" } },
+                        { displayUsername: { contains: search, mode: "insensitive" } },
+                    ]
+                }),
+                cards: {
+                    none: {
+                        statuses: {
+                            some: {
+                                isCurrent: true,
+                                status: {
+                                    name: "ACTIVE",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            ...(cursor && { cursor: { id: cursor } }),
+            take: limitPlusOne,
+        });
+        let nextCursor: typeof cursor | undefined = undefined;
+        if (users.length > (limitPlusOne - 1)) {
+            const nextItem = users.pop(); // return the last item from the array
+            nextCursor = nextItem!.id;
+        }
+        return {
+            users,
+            nextCursor
+        }
+
+    }
+}

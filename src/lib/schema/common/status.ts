@@ -3,6 +3,10 @@ import { StatusType } from "@/generated/prisma/browser";
 
 
 
+export const statusEnum = z.enum(StatusType);
+
+
+
 export const statusUpdateSchema = z.object({
     status: z.enum(StatusType),
     notes: z.string().max(500).optional(),

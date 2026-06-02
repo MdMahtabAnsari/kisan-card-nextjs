@@ -27,3 +27,10 @@ export const infiniteScroll = z.object({
     direction: directionEnum,
 });
 export type InfiniteScroll = z.infer<typeof infiniteScroll>;
+
+
+export const infiniteScrollWithSearch = infiniteScroll.extend({
+    search: z.string().optional(),
+});
+
+export type InfiniteScrollWithSearch = z.infer<typeof infiniteScrollWithSearch>;

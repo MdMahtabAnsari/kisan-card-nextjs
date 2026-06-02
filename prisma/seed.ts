@@ -100,19 +100,19 @@ async function main() {
     }
 
     //    create 10 shop categories with unique names
-    const shopCategories = [];
+    const categories = [];
     const categoryNames = new Set<string>();
     while (categoryNames.size < 10) {
         categoryNames.add(faker.commerce.department());
     }
 
     for (const name of categoryNames) {
-        const category = await prisma.shopCategory.create({
+        const category = await prisma.category.create({
             data: {
                 name: name,
             }
         })
-        shopCategories.push(category);
+        categories.push(category);
     }
 
     // create 10 state gsts with unique state names
@@ -151,7 +151,7 @@ async function main() {
                 email: faker.internet.email(),
                 description: faker.lorem.paragraph(),
                 addressId: address.id,
-                categoryId: faker.helpers.arrayElement(shopCategories).id,
+                categoryId: faker.helpers.arrayElement(categories).id,
                 stateGstId: faker.helpers.arrayElement(stateGsts).id,
             }
         });

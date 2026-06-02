@@ -11,7 +11,8 @@ import {
     FileText,
     Settings,
     Home,
-    BadgeIndianRupee
+    BadgeIndianRupee,
+     Store
 } from "lucide-react"
 import Link from "next/link"
 
@@ -61,7 +62,7 @@ export const adminNavMain = [
       },
       {
         title: "Add Card",
-        url: "/admin/cards/new",
+        url: "/admin/cards/add",
       },
       {
         title: "QR Scan Lookup",
@@ -70,7 +71,7 @@ export const adminNavMain = [
     ],
   },
   {
-    title: "Users & Shops",
+    title: "Users",
     url: "/admin/users",
     icon: Users,
     items: [
@@ -80,15 +81,22 @@ export const adminNavMain = [
       },
       {
         title: "Add User",
-        url: "/admin/users/new",
+        url: "/admin/users/add",
       },
+    ],
+  },
+  {
+    title: "Shops",
+    url: "/admin/shops",
+    icon: Store,
+    items: [
       {
         title: "All Shops",
         url: "/admin/shops",
       },
       {
         title: "Add Shop",
-        url: "/admin/shops/new",
+        url: "/admin/shops/add",
       },
     ],
   },

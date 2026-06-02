@@ -2,7 +2,7 @@
 import { GenericAreaChart, GenericAreaChartSkeleton } from "@/components/chart/area.chart";
 import { useState } from "react";
 import { api } from "@/trpc/react";
-import { DayEnum } from "@/lib/schema/day";
+import { DayEnum } from "@/lib/schema/common/day";
 import { Error } from "@/components/error/error";
 
 

@@ -12,7 +12,7 @@ import { themePlugin } from "@/lib/auth/plugins/theme-plugin"
 import { useTheme } from "next-themes"
 import { magicLinkPlugin } from "@/lib/auth/plugins/magic-link-plugin"
 import { usernamePlugin } from "@/lib/auth/plugins/username-plugin"
-import { aadhaarNumber } from "@/lib/schema/common"
+import { aadhaarNumber } from "@/lib/schema/common/common"
 
 export function BetterAuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()

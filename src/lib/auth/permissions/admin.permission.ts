@@ -14,6 +14,7 @@ export const statements = {
     shopStatus:        ["create", "read", "update"] as const,
     shopInventory:     ["read", "update"] as const,
     shopBatch:         ["read", "update"] as const,
+    stateGst:         ["create", "read", "update", "delete"] as const,
 
     // Card & recharge
     card:              ["create", "read", "update", "delete", "list"] as const,
@@ -74,6 +75,7 @@ export const admin = ac.newRole({
     shopInventory:        ["read", "update"],
     shopBatch:            ["read", "update"],
     card:                 ["create", "read", "update", "delete", "list"],
+    stateGst:            ["create", "read", "update"],
     cardStatus:           ["create", "read", "update"],
     cardDiscount:         ["create", "read", "update", "delete"],
     recharge:             ["create", "read", "list"],

@@ -1,9 +1,12 @@
-import { DB } from "@/lib/db/prisma";
-import { startOfMonth, endOfMonth, subMonths, startOfDay, endOfDay, subDays, format, isBefore, addDays } from "date-fns";
-import { StatusType, CardType, Prisma } from "@/generated/prisma/client";
-import { DayEnum } from "@/lib/schema/day";
-import { FilterCardSchema } from "@/lib/schema/admin/card";
-import { PaginationSchema } from "@/lib/schema/page";
+import {DB} from "@/lib/db/prisma";
+import {addDays, endOfDay, endOfMonth, format, isBefore, startOfDay, startOfMonth, subDays, subMonths} from "date-fns";
+import {CardType, Prisma, StatusType} from "@/generated/prisma/client";
+import {DayEnum} from "@/lib/schema/common/day";
+import {FilterCardSchema} from "@/lib/schema/admin/card";
+import {PaginationSchema} from "@/lib/schema/common/page";
+import {StatusService} from "@/services/common/status.service";
+import {CreateCardForm} from "@/lib/schema/admin/card";
+import {CreateCardStatus} from "@/lib/types/card";
 
 
 export class CardService {
@@ -187,13 +190,12 @@ export class CardService {
                 cursor = addDays(cursor, 1);
             }
         }
-        const result = dates.map(date => ({
+        return dates.map(date => ({
             date,
             standard: standardCardMap.get(date) ?? 0,
             premium: premiumCardMap.get(date) ?? 0,
             vip: vipCardMap.get(date) ?? 0,
         }));
-        return result;
     }
 
     async getCards(filter: FilterCardSchema) {
@@ -249,7 +251,6 @@ export class CardService {
             ...(points && { points })
         } : undefined;
 
-        console.log("Order By:", orderBy);
 
         const cards = await this.db.card.findMany({
             where: {
@@ -303,16 +304,10 @@ export class CardService {
         };
     }
 
-    async updateCardStatus({ cardId, status, userId, notes }: { cardId: string, status: StatusType, userId: string, notes?: string }) {
-        const createdStatus = await this.db.status.upsert({
-            where: {
-                name: status
-            },
-            create: {
-                name: status,
-            },
-            update: {}
-        });
+    async updateCardStatus({ cardId, status, userId, notes }: CreateCardStatus) {
+
+        const statusService = new StatusService(this.db);
+        const createdStatus = await statusService.createStatus(status);
         await this.db.cardStatus.updateMany({
             where: {
                 cardId,
@@ -322,7 +317,7 @@ export class CardService {
                 isCurrent: false
             }
         });
-        return await this.db.cardStatus.upsert({
+        return this.db.cardStatus.upsert({
             where: {
                 cardId_statusId: {
                     cardId,
@@ -341,6 +336,44 @@ export class CardService {
                 createdById: userId
 
             }
+        });
+    }
+
+    async createCardStatus({ cardId, status, userId, notes }: CreateCardStatus) {
+        const statusService = new StatusService(this.db);
+        const createdStatus = await statusService.createStatus(status);
+        return this.db.cardStatus.create({
+            data: {
+                cardId,
+                statusId: createdStatus.id,
+                createdById: userId,
+                notes: notes
+            }
         })
+    }
+
+    async createCard(userId:string,data:CreateCardForm){
+        // expiryDate should be 3 years from current date
+        const expiryDate = new Date(
+            new Date().setFullYear(new Date().getFullYear() + 3)
+        );
+
+        const card = await this.db.card.create({
+            data:{
+                ...data,
+                points:Number(data.points),
+                expiryDate
+            }
+        })
+
+        await this.createCardStatus({
+            cardId:card.id,
+            status:"PENDING",
+            userId: userId,
+            notes:"Card created and pending approval"
+        })
+
+        return card;
+
     }
 }

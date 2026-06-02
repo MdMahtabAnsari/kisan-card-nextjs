@@ -12,7 +12,7 @@ import {
     getFilteredRowModel,
     ColumnFiltersState,
 } from "@tanstack/react-table"
-import { PaginationSchema } from "@/lib/schema/page"
+import { PaginationSchema } from "@/lib/schema/common/page"
 
 import {
     Table,
@@ -121,6 +121,7 @@ export function DataTable<TData, TValue, TPagination extends PaginationSchema = 
     const bannedColumn = table.getAllColumns().find(c => c.id === "banned") ?? null;
     const statusColumn = table.getAllColumns().find(c => c.id === "status") ?? null;
     const typeColumn = table.getAllColumns().find(c => c.id === "type") ?? null;
+    const UserStatusColumn = table.getAllColumns().find(c => c.id === "userStatuses") ?? null;
 
     return (
         <div>
@@ -203,7 +204,22 @@ export function DataTable<TData, TValue, TPagination extends PaginationSchema = 
                                         }))
                                     ]}
                                 />
+
                             )}
+                            {
+                                UserStatusColumn && (
+                                    <DataTableFacetedFilter
+                                        column={UserStatusColumn}
+                                        title="Status"
+                                       options={[
+                                        ...Object.values(StatusType).map((status) => ({
+                                            label: status.replace(/_/g, ' '),
+                                            value: status
+                                        }))
+                                    ]}
+                                    />
+                                )
+                            }
                             
                             <DataTableResetFilter table={table} />
                         </>

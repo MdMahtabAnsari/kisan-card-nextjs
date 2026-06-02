@@ -2,7 +2,6 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal } from "lucide-react";
-import Link from "next/link";
 
 import { formatDateTime } from "@/lib/helpers/formatter/date.formatter";
 
@@ -10,17 +9,30 @@ import { DataTableColumnHeader } from "@/components/table/data-table-column-head
 
 import { Button } from "@/components/ui/button";
 import {UserRouterOutput} from "@/server/api/routers/admin/user";
+import {USER_STATUS_ACTIONS} from "@/lib/constants/status/user.status";
+import { UserStatusUpdateSchema } from "@/lib/schema/common/user";
 
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { StatusUpdateDialog } from "@/components/dialog/status.dialog";
 
-export const columns: ColumnDef<UserRouterOutput['getUsers']['users'][number]>[] = [
+type User = UserRouterOutput['getUsers']['users'][number]
+
+interface ColumnsProps {
+    onStatusUpdate?: (status: UserStatusUpdateSchema) => void;
+}
+
+
+export const getColumns = ({
+    onStatusUpdate,
+}: ColumnsProps): ColumnDef<User>[] => [
     // Basic Info
     {
         accessorKey: "name",
@@ -105,6 +117,14 @@ export const columns: ColumnDef<UserRouterOutput['getUsers']['users'][number]>[]
         ),
     },
 
+    {
+        accessorKey: "userStatuses",
+        header: "Status",
+        cell: ({ row }) => (
+            row.original.userStatuses?.[0]?.status?.name || "N/A"
+        ),
+    },
+
     // Dates
     {
         accessorKey: "createdAt",
@@ -117,45 +137,59 @@ export const columns: ColumnDef<UserRouterOutput['getUsers']['users'][number]>[]
     },
 
     // Actions
-    {
-        id: "actions",
-        header: "Actions",
-        cell: ({ row }) => {
-            return (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            className="h-8 w-8 p-0"
-                        >
-                            <span className="sr-only">
-                                Open menu
-                            </span>
-
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>
-                            Actions
-                        </DropdownMenuLabel>
-
-                        <DropdownMenuSeparator />
-
-                        <DropdownMenuItem
-                            asChild
-                            className="cursor-pointer"
-                        >
-                            <Link
-                                href={`/admin/users/${row.original.id}`}
+        {
+            id: "actions",
+            header: "Actions",
+            cell: ({ row }) => {
+                const actions = row.original.userStatuses.length > 0 ? USER_STATUS_ACTIONS[row.original.userStatuses[0].status.name] : [];
+                return (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                className="h-8 w-8 p-0"
                             >
-                                View Details
-                            </Link>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            );
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+
+                        <DropdownMenuContent
+                            align="end"
+                            className="w-48"
+                        >
+                            <DropdownMenuLabel>
+                                Actions
+                            </DropdownMenuLabel>
+
+                            <DropdownMenuSeparator />
+
+                            <DropdownMenuGroup>
+                                {actions?.map((action) => (
+                                    <StatusUpdateDialog
+                                        key={action}
+                                        status={action}
+                                        trigger={
+                                            <DropdownMenuItem
+                                                onSelect={(e) => {
+                                                    // prevents menu auto close
+                                                    e.preventDefault();
+                                                }}
+                                            >
+                                                {action}
+                                            </DropdownMenuItem>
+                                        }
+                                        onSubmit={(values) =>
+                                            onStatusUpdate?.({
+                                                userId: row.original.id,
+                                                ...values,
+                                            })
+                                        }
+                                    />
+                                ))}
+                            </DropdownMenuGroup>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                );
+            },
         },
-    },
 ];
