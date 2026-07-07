@@ -522,4 +522,87 @@ export class UserService {
         }
 
     }
+
+    async getMonthlyUsers(type?:StatusType){
+        const now = new Date();
+
+        // 1. Current month boundaries
+        const currentMonthStart = startOfMonth(now);
+        const currentMonthEnd = endOfMonth(now);
+
+        // 2. Cleaner calculation for last month
+        const lastMonth = subMonths(now, 1);
+        const lastMonthStart = startOfMonth(lastMonth);
+        const lastMonthEnd = endOfMonth(lastMonth);
+
+        const [currentMonthCount, lastMonthCount, totalCount] = await Promise.all([
+            this.db.user.count({
+                where: {
+                    createdAt: {
+                        gte: currentMonthStart,
+                        lte: currentMonthEnd,
+                    },
+                    ...(type && {
+                        userStatuses: {
+                            some: {
+                                isCurrent: true,
+                                status: {
+                                    name: type
+                                }
+                            }
+                        }
+                    })
+
+                },
+            }),
+            this.db.user.count({
+                where: {
+                    createdAt: {
+                        gte: lastMonthStart,
+                        lte: lastMonthEnd,
+                    },
+                    ...(type && {
+                        userStatuses: {
+                            some: {
+                                isCurrent: true,
+                                status: {
+                                    name: type
+                                }
+                            }
+                        }
+                    })
+
+
+                },
+            }),
+            this.db.user.count({
+                where: {
+                    ...(type && {
+                        userStatuses: {
+                            some: {
+                                isCurrent: true,
+                                status: {
+                                    name: type
+                                }
+                            }
+                        }
+                    })
+
+                }
+            }),
+
+        ]);
+
+        const percentageChange = lastMonthCount > 0
+            ? ((currentMonthCount - lastMonthCount) / lastMonthCount) * 100
+            : (currentMonthCount > 0 ? 100 : 0);
+
+        return {
+            currentMonthCount,
+            lastMonthCount,
+            totalCount,
+            percentageChange
+        };
+
+    }
 }

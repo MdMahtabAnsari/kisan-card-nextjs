@@ -11,7 +11,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { passkeyPlugin } from "@/lib/auth/plugins/passkey-plugin"
+import { passkeyPlugin } from "@/lib/auth/passkey-plugin"
 import { cn } from "@/lib/utils"
 
 import { AddPasskeyDialog } from "./add-passkey-dialog"

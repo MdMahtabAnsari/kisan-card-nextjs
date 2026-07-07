@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuSubContent
 } from "@/components/ui/dropdown-menu"
-import { multiSessionPlugin } from "@/lib/auth/plugins/multi-session-plugin"
+import { multiSessionPlugin } from "@/lib/auth/multi-session-plugin"
 import { SwitchAccountSubmenuItem } from "./switch-account-submenu-item"
 
 /**
@@ -27,7 +27,7 @@ import { SwitchAccountSubmenuItem } from "./switch-account-submenu-item"
  * @returns The switch account submenu content as a JSX element
  */
 export function SwitchAccountSubmenuContent() {
-  const { authClient, basePaths, viewPaths, Link } = useAuth()
+  const { authClient, basePaths, viewPaths, navigate } = useAuth()
   const { localization: multiSessionLocalization } =
     useAuthPlugin(multiSessionPlugin)
   const { data: session } = useSession(authClient)
@@ -40,7 +40,7 @@ export function SwitchAccountSubmenuContent() {
       <DropdownMenuItem>
         <UserView isPending={isPending} />
 
-        {!isPending && <Check className="ml-auto" />}
+        {!isPending && <Check className="ms-auto" />}
       </DropdownMenuItem>
 
       {deviceSessions
@@ -56,12 +56,14 @@ export function SwitchAccountSubmenuContent() {
 
       <DropdownMenuSeparator />
 
-      <DropdownMenuItem asChild>
-        <Link href={`${basePaths.auth}/${viewPaths.auth.signIn}`}>
-          <CirclePlus className="text-muted-foreground" />
+      <DropdownMenuItem
+        onClick={() =>
+          navigate({ to: `${basePaths.auth}/${viewPaths.auth.signIn}` })
+        }
+      >
+        <CirclePlus className="text-muted-foreground" />
 
-          {multiSessionLocalization.addAccount}
-        </Link>
+        {multiSessionLocalization.addAccount}
       </DropdownMenuItem>
     </DropdownMenuSubContent>
   )

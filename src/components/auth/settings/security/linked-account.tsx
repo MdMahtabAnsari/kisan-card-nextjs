@@ -94,7 +94,7 @@ export function LinkedAccount({ account, provider }: LinkedAccountProps) {
 
         {account ? (
           <Button
-            className="ml-auto shrink-0"
+            className="ms-auto shrink-0"
             variant="outline"
             size="sm"
             onClick={() => unlinkAccount({ providerId: account.providerId })}
@@ -111,7 +111,7 @@ export function LinkedAccount({ account, provider }: LinkedAccountProps) {
           </Button>
         ) : (
           <Button
-            className="ml-auto shrink-0"
+            className="ms-auto shrink-0"
             variant="outline"
             size="sm"
             onClick={() =>

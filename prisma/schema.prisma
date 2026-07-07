@@ -134,6 +134,9 @@ model TwoFactor {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   verified    Boolean? @default(true)
 
+  failedVerificationCount Int?      @default(0)
+  lockedUntil             DateTime?
+
   @@index([secret])
   @@index([userId])
   @@map("twoFactor")
@@ -500,14 +503,16 @@ model CardDiscount {
 }
 
 model RechargeExchangeRate {
-  id       String   @id @default(uuid())
-  cardType CardType @unique
-  points   Decimal  @db.Decimal(10, 2)
-  amount   Decimal  @db.Decimal(10, 2)
-
+  id        String     @id @default(uuid())
+  cardType  CardType
+  points    Decimal    @db.Decimal(10, 2)
+  amount    Decimal    @db.Decimal(10, 2)
+  isActive  Boolean    @default(true)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   recharges Recharge[] @relation("RechargeExchangeRate")
+
+  @@unique([cardType, points, amount])
 }
 
 model Recharge {
@@ -536,6 +541,7 @@ model Recharge {
 
 model RechargePayment {
   id              String                   @id @default(uuid())
+  paymentMethod   PaymentMethod
   orderId         String                   @unique
   amount          Decimal                  @db.Decimal(10, 2)
   paymentProvider RechargePaymentProvider? @relation("PaymentProvider")
@@ -548,6 +554,7 @@ model RechargePayment {
 
   @@index([rechargeId])
   @@index([status])
+  @@index([paymentMethod])
 }
 
 model RechargePaymentProvider {
@@ -566,8 +573,6 @@ model RechargePaymentProvider {
 
 enum Provider {
   RAZORPAY
-  PHONEPE
-  STRIPE
   PAYU
 }
 
@@ -659,6 +664,7 @@ model TransactionPayment {
 
   @@index([transactionId])
   @@index([status])
+  @@index([paymentMethod])
 }
 
 model TransactionPaymentProvider {
@@ -935,7 +941,7 @@ model Category {
 
   products    Product[]            @relation("ProductCategory")
   commissions CategoryCommission[] @relation("CategoryCommission")
-  shops       Shop[]                 @relation("ShopCategory")
+  shops       Shop[]               @relation("ShopCategory")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

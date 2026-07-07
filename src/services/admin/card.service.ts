@@ -2,7 +2,7 @@ import {DB} from "@/lib/db/prisma";
 import {addDays, endOfDay, endOfMonth, format, isBefore, startOfDay, startOfMonth, subDays, subMonths} from "date-fns";
 import {CardType, Prisma, StatusType} from "@/generated/prisma/client";
 import {DayEnum} from "@/lib/schema/common/day";
-import {FilterCardSchema} from "@/lib/schema/admin/card";
+import {FilterCardSchema,FilterCardInfiniteScrollSchema} from "@/lib/schema/admin/card";
 import {PaginationSchema} from "@/lib/schema/common/page";
 import {StatusService} from "@/services/common/status.service";
 import {CreateCardForm} from "@/lib/schema/admin/card";
@@ -375,5 +375,111 @@ export class CardService {
 
         return card;
 
+    }
+
+    async getCardsInfiniteScroll(filter:FilterCardInfiniteScrollSchema){
+        const {  cursor, limit, type, status, search, createdAt, cardNumber, cardHolder, typeSort, points } = filter;
+        const limitPlusOne = limit ? limit + 1 : 11;
+        const orderBy: Prisma.CardOrderByWithRelationInput | undefined = (createdAt || cardNumber || cardHolder || typeSort || points) ? {
+            ...(createdAt && { createdAt }),
+            ...(cardNumber && { cardNumber }),
+            ...(cardHolder && { cardHolder }),
+            ...(typeSort && { type: typeSort }),
+            ...(points && { points })
+        } : undefined;
+
+        const cards = await this.db.card.findMany({
+            where: {
+                deletedAt: null,
+                ...(search && {
+                    OR: [
+                        { cardNumber: { contains: search, mode: "insensitive" } },
+                        { cardHolder: { contains: search, mode: "insensitive" } },
+                        { id: { contains: search, mode: "insensitive" } },
+                    ]
+                }),
+                ...(type && { type: { in: type } }),
+                ...(status && {
+                    statuses: {
+                        some: {
+                            isCurrent: true,
+                            status: {
+                                name: { in: status }
+                            }
+                        }
+                    }
+                }),
+            },
+            orderBy,
+            take: limitPlusOne,
+            ...(cursor && { cursor: { id: cursor } }),
+            include: {
+                statuses: {
+                    where: {
+                        isCurrent: true,
+                        ...(status && {
+                            status: {
+                                name: { in: status }
+                            }
+                        })
+                    },
+                    include: {
+                        status: true
+                    }
+                },
+                user: true,
+                shop: true,
+
+            }
+        });
+
+        let nextCursor: typeof cursor | undefined = undefined;
+        if (cards.length > (limitPlusOne - 1)) {
+            const nextItem = cards.pop(); // return the last item from the array
+            nextCursor = nextItem!.id;
+        }
+        return {
+            cards,
+            nextCursor
+        }
+
+    }
+
+    async getCard(search:string){
+        return this.db.card.findFirst({
+            where:{
+                OR: [
+                    { cardNumber:search },
+                    { id: search }
+                ]
+            },
+            include: {
+                statuses: {
+                    where: {
+                        isCurrent: true,
+
+                    },
+                    include: {
+                        status: true
+                    }
+                },
+                user: true,
+                shop: true,
+
+            }
+        })
+    }
+
+    async addPoints({cardId,points}:{cardId:string,points:number}){
+        return this.db.card.update({
+            where:{
+                id:cardId
+            },
+            data:{
+                points: {
+                    increment: points
+                }
+            }
+        })
     }
 }

@@ -21,7 +21,7 @@ import {
   InputGroupInput
 } from "@/components/ui/input-group"
 import { Label } from "@/components/ui/label"
-import { apiKeyPlugin } from "@/lib/auth/plugins/api-key-plugin"
+import { apiKeyPlugin } from "@/lib/auth/api-key-plugin"
 
 export type NewApiKeyDialogProps = {
   open: boolean

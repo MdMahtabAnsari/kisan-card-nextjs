@@ -34,13 +34,13 @@ export function SwitchAccountSubmenuItem({
   return (
     <DropdownMenuItem
       disabled={isPending}
-      onSelect={() =>
+      onClick={() =>
         setActiveSession({ sessionToken: deviceSession.session.token })
       }
     >
       <UserView user={deviceSession.user} />
 
-      {isPending && <Spinner className="ml-auto size-4" />}
+      {isPending && <Spinner className="ms-auto size-4" />}
     </DropdownMenuItem>
   )
 }

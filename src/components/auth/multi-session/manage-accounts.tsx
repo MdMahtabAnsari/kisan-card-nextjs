@@ -10,7 +10,7 @@ import {
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { multiSessionPlugin } from "@/lib/auth/plugins/multi-session-plugin"
+import { multiSessionPlugin } from "@/lib/auth/multi-session-plugin"
 import { cn } from "@/lib/utils"
 import { ManageAccount } from "./manage-account"
 

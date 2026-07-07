@@ -2,7 +2,7 @@ import { viewPaths } from "@better-auth-ui/core"
 import { notFound } from "next/navigation"
 
 import { Auth } from "@/components/auth/auth"
-import { magicLinkPlugin } from "@/lib/auth/plugins/magic-link-plugin"
+import { magicLinkPlugin } from "@/lib/auth/magic-link-plugin"
 
 export default async function AuthPage({
   params

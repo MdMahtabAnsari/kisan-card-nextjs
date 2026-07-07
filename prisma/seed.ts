@@ -1,7 +1,7 @@
 import { auth } from "../src/lib/auth/auth"
 import { prisma } from "../src/lib/db/prisma"
 import { faker } from '@faker-js/faker';
-import {CardType} from "../src/generated/prisma/client";
+import {CardType} from "../src/generated/prisma/enums";
 
 async function main() {
     //    create admin user
@@ -435,7 +435,7 @@ async function main() {
     const cardTypes = Object.values(CardType);
 
     const cards = [];
-    
+
     for (let i = 0; i < 25; i++) {
         const user = users[i];
         const shop = shops[i % 5]; // assign to first 5 active shops
@@ -504,6 +504,25 @@ async function main() {
             }
         })
     }
+
+//     exchange rate for card types
+    const exchangeRates = []
+
+    for (const item of Object.values(CardType)) {
+        const points = faker.number.int({ min: 1200, max: 3000 });
+        const amount = faker.number.int({ min: 100, max: 1000 });
+
+        const exchange =await prisma.rechargeExchangeRate.create({
+            data: {
+                cardType: item,
+                points,
+                amount,
+                isActive: true,
+            },
+        });
+        exchangeRates.push(exchange);
+    }
+
 
 
 }

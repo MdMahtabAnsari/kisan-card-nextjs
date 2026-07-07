@@ -33,7 +33,7 @@ export function SidebarLayout({ user, children }: SidebarLayoutProps) {
                         {/* ONLY CONTENT SCROLLS */}
                         <div className="h-full overflow-y-auto overflow-x-hidden p-4">
 
-                            <div className="min-w-0 rounded-xl bg-muted/50 p-4">
+                            <div className="min-w-0 bg-muted/50 p-4">
                                 {children}
                             </div>
 

@@ -12,6 +12,7 @@ import { DocumentService } from "@/services/common/document.service";
 import { MediaService } from "@/services/common/media.service";
 import { infiniteScrollWithSearch } from "@/lib/schema/common/page";
 import { userStatusUpdateSchema } from "@/lib/schema/common/user";
+import {statusEnum} from "@/lib/schema/common/status";
 
 export const userRouter = router({
     getMonthlyRegistrations: adminProcedure.query(async ({ ctx }) => {
@@ -306,6 +307,41 @@ export const userRouter = router({
             })
         }
     }),
+    getMonthlyUsers:adminProcedure.input(statusEnum.optional()).query(async ({ ctx, input }) => {
+        try{
+            const user = ctx.session.user;
+            const hasPermission = await auth.api.userHasPermission({
+                body: {
+                    userId: user.id,
+                    role: user.role as UserRole,
+                    permissions: {
+                        "user": ["get"]
+                    }
+                }
+            })
+            if (!hasPermission.success) {
+                throw new TRPCError({
+                    code: "FORBIDDEN",
+                    message: "You do not have permission to read user information."
+                });
+            }
+            const prisma = ctx.prisma;
+            const userService = new UserService(prisma);
+            return userService.getMonthlyUsers(input);
+
+        }catch(error) {
+            console.error("Error fetching monthly users:", error);
+            if (error instanceof TRPCError) {
+                throw error;
+            }
+
+            const message = error instanceof Error ? error.message : "Unknown error";
+            throw new TRPCError({
+                code: "INTERNAL_SERVER_ERROR",
+                message: `Failed to fetch monthly users: ${message}`,
+            })
+        }
+    })
 });
 
 

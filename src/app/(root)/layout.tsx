@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SidebarLayout } from "@/components/layout/sidebar.layout";
-import { User } from "@/components/app-sidebar";
+import { User } from "@/lib/types/user";
 
 
 export default async function Layout({

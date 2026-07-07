@@ -93,7 +93,7 @@ export function ActiveSession({ activeSession }: ActiveSessionProps) {
         </div>
 
         <Button
-          className="ml-auto shrink-0"
+          className="ms-auto shrink-0"
           variant="outline"
           size="sm"
           onClick={() =>

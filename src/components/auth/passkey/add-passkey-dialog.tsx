@@ -24,7 +24,7 @@ import { Field, FieldError } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
-import { passkeyPlugin } from "@/lib/auth/plugins/passkey-plugin"
+import { passkeyPlugin } from "@/lib/auth/passkey-plugin"
 
 export type AddPasskeyDialogProps = {
   open: boolean

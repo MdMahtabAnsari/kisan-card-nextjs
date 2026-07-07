@@ -21,10 +21,10 @@ import {
   FieldSeparator
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
-import { magicLinkPlugin } from "@/lib/auth/plugins/magic-link-plugin"
+import { magicLinkPlugin } from "@/lib/auth/magic-link-plugin"
 import { cn } from "@/lib/utils"
-import { Label } from "../ui/label"
 import { ProviderButtons, type SocialLayout } from "./provider-buttons"
 
 export type MagicLinkProps = {

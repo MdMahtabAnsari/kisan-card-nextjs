@@ -7,9 +7,12 @@ export class RazorpayService{
     private readonly razorpay: Razorpay;
 
     constructor() {
+        if(!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET){
+            throw new Error("Razorpay key id or secret is not set");
+        }
         this.razorpay = new Razorpay({
-            key_id: process.env.RAZORPAY_KEY_ID || "",
-            key_secret: process.env.RAZORPAY_KEY_SECRET || "",
+            key_id: process.env.RAZORPAY_KEY_ID,
+            key_secret: process.env.RAZORPAY_KEY_SECRET,
         });
     }
 
@@ -31,6 +34,6 @@ export class RazorpayService{
         const generatedSignature = createHmac("sha256", secret)
             .update(`${orderId}|${paymentId}`)
             .digest("hex");
-        return secret === generatedSignature;
+        return signature === generatedSignature;
     }
 }

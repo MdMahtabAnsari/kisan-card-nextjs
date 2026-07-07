@@ -5,7 +5,7 @@ import { Fingerprint } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { passkeyPlugin } from "@/lib/auth/plugins/passkey-plugin"
+import { passkeyPlugin } from "@/lib/auth/passkey-plugin"
 
 export type PasskeysEmptyProps = {
   onAddPress: () => void

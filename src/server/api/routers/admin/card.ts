@@ -6,7 +6,7 @@ import { UserRole } from "@/generated/prisma/client";
 import { statusEnum } from "@/lib/schema/common/status";
 import { dayEnum } from "@/lib/schema/common/day";
 import { inferRouterOutputs } from "@trpc/server";
-import { filterCardSchema } from "@/lib/schema/admin/card";
+import { filterCardSchema,filterCardInfiniteScrollSchema,cardByIdOrNumberSchema } from "@/lib/schema/admin/card";
 import { cardStatusUpdateSchema } from "@/lib/schema/common/card";
 import {createCardSchema} from "@/lib/schema/admin/card";
 
@@ -184,6 +184,72 @@ export const cardRouter = router({
                 code: "INTERNAL_SERVER_ERROR",
                 message: `Failed to create card status: ${message}`,
             })
+        }
+    }),
+    getCardsInfiniteScroll:adminProcedure.input(filterCardInfiniteScrollSchema).query(async ({ ctx, input }) => {
+        try {
+            const user = ctx.session.user;
+            const hasPermission = await auth.api.userHasPermission({
+                body: {
+                    userId: user.id,
+                    role: user.role as UserRole,
+                    permissions: {
+                        "card": ["read"]
+                    }
+                }
+            });
+            if (!hasPermission.success) {
+                throw new TRPCError({
+                    code: "FORBIDDEN",
+                    message: "You do not have permission to read card information."
+                });
+            }
+            const prisma = ctx.prisma;
+            const cardService = new CardService(prisma);
+            return await cardService.getCardsInfiniteScroll(input);
+        } catch (error) {
+            console.error("Error fetching cards:", error);
+            if (error instanceof TRPCError) {
+                throw error;
+            }
+            const message = error instanceof Error ? error.message : "Unknown error";
+            throw new TRPCError({
+                code: "INTERNAL_SERVER_ERROR",
+                message: `Failed to fetch cards: ${message}`,
+            });
+        }
+    }),
+    getCard:adminProcedure.input(cardByIdOrNumberSchema).query(async ({ ctx, input }) => {
+        try {
+            const user = ctx.session.user;
+            const hasPermission = await auth.api.userHasPermission({
+                body: {
+                    userId: user.id,
+                    role: user.role as UserRole,
+                    permissions: {
+                        "card": ["read"]
+                    }
+                }
+            });
+            if (!hasPermission.success) {
+                throw new TRPCError({
+                    code: "FORBIDDEN",
+                    message: "You do not have permission to read card information."
+                });
+            }
+            const prisma = ctx.prisma;
+            const cardService = new CardService(prisma);
+            return await cardService.getCard(input);
+        } catch (error) {
+            console.error("Error fetching card:", error);
+            if (error instanceof TRPCError) {
+                throw error;
+            }
+            const message = error instanceof Error ? error.message : "Unknown error";
+            throw new TRPCError({
+                code: "INTERNAL_SERVER_ERROR",
+                message: `Failed to fetch card: ${message}`,
+            });
         }
     })
 });

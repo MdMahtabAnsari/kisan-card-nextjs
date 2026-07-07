@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/input-group"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
-import { usernamePlugin } from "@/lib/auth/plugins/username-plugin"
+import { usernamePlugin } from "@/lib/auth/username-plugin"
 
 /**
  * Renderer for the `username` additional field. Owns availability checking,
@@ -31,12 +31,13 @@ export function UsernameField({
   field,
   isPending
 }: AdditionalFieldProps) {
-  const { authClient } = useAuth()
+  const { authClient, localization: authLocalization } = useAuth()
   const {
     localization,
     minUsernameLength,
     maxUsernameLength,
-    isUsernameAvailable: checkAvailability
+    isUsernameAvailable: checkAvailability,
+    usernamePrefix
   } = useAuthPlugin(usernamePlugin)
 
   const currentUsername = String(field.defaultValue ?? "")
@@ -83,6 +84,12 @@ export function UsernameField({
       <Label htmlFor={name}>{field.label}</Label>
 
       <InputGroup>
+        {usernamePrefix && (
+          <InputGroupAddon align="inline-start">
+            {usernamePrefix}
+          </InputGroupAddon>
+        )}
+
         <InputGroupInput
           id={name}
           name={name}
@@ -97,7 +104,19 @@ export function UsernameField({
           onChange={(e) => handleChange(e.target.value)}
           onInvalid={(e) => {
             e.preventDefault()
-            setError((e.target as HTMLInputElement).validationMessage)
+            const el = e.target as HTMLInputElement
+            const msg = el.validity.valueMissing
+              ? authLocalization.auth.fieldRequired
+              : el.validity.tooShort
+                ? authLocalization.auth.tooShort.replace(
+                    "{{min}}",
+                    String(minUsernameLength)
+                  )
+                : authLocalization.auth.tooLong.replace(
+                    "{{max}}",
+                    String(maxUsernameLength)
+                  )
+            setError(msg)
           }}
           aria-invalid={!!error}
           placeholder={field.placeholder}

@@ -8,6 +8,8 @@ import {ThemeProvider} from "@/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import {BetterAuthProvider} from "@/providers/better-auth.provider";
 import { TooltipProvider } from "@/components/ui/tooltip"
+import {RazorpayProvider} from "@/providers/razorpay-provider";
+
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 const geistSans = Geist({
@@ -52,11 +54,13 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-            <TooltipProvider>
-              {children}
-              <Toaster />
-            </TooltipProvider>
-          </ThemeProvider>
+              <RazorpayProvider>
+                <TooltipProvider>
+                  {children}
+                  <Toaster />
+                </TooltipProvider>
+              </RazorpayProvider>
+            </ThemeProvider>
           </BetterAuthProvider>
         </TRPCReactProvider>
       </body>

@@ -6,7 +6,7 @@ import { Trash2, Upload } from "lucide-react"
 import { type ChangeEvent, useRef, useState } from "react"
 import { toast } from "sonner"
 import { UserAvatar } from "@/components/auth/user/user-avatar"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +16,7 @@ import {
 import { Field } from "@/components/ui/field"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
+import { cn } from "@/lib/utils"
 
 export type ChangeAvatarProps = {
   className?: string
@@ -111,16 +112,13 @@ export function ChangeAvatar({ className }: ChangeAvatarProps) {
         </Button>
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={!session || isPending}
-            >
-              {isPending && <Spinner />}
+          <DropdownMenuTrigger
+            className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}
+            disabled={!session || isPending}
+          >
+            {isPending && <Spinner />}
 
-              {localization.settings.changeAvatar}
-            </Button>
+            {localization.settings.changeAvatar}
           </DropdownMenuTrigger>
 
           <DropdownMenuContent className="min-w-fit">

@@ -6,13 +6,11 @@ import {
   useAuth,
   useAuthPlugin,
   useFetchOptions,
-  useSendVerificationEmail,
   useSignInEmail,
   useSignInUsername
 } from "@better-auth-ui/react"
 import { useIsMutating } from "@tanstack/react-query"
 import { type SyntheticEvent, useState } from "react"
-import { toast } from "sonner"
 import {
   ProviderButtons,
   type SocialLayout
@@ -30,7 +28,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
-import { usernamePlugin } from "@/lib/auth/plugins/username-plugin"
+import { usernamePlugin } from "@/lib/auth/username-plugin"
 import { cn } from "@/lib/utils"
 
 export type SignInUsernameProps = {
@@ -56,7 +54,6 @@ export function SignInUsername({
   const {
     authClient,
     basePaths,
-    baseURL,
     emailAndPassword,
     localization,
     plugins,
@@ -73,46 +70,45 @@ export function SignInUsername({
 
   const [password, setPassword] = useState("")
 
-  const { mutate: sendVerificationEmail } = useSendVerificationEmail(
-    authClient,
-    {
-      onSuccess: () => toast.success(localization.auth.verificationEmailSent)
-    }
-  )
-
   const { mutate: signInEmail, isPending: isSignInEmailPending } =
     useSignInEmail(authClient, {
       onError: (error, { email }) => {
         setPassword("")
 
         if (error.error?.code === "EMAIL_NOT_VERIFIED") {
-          toast.error(error.error?.message || error.message, {
-            action: {
-              label: localization.auth.resend,
-              onClick: () =>
-                sendVerificationEmail({
-                  email,
-                  callbackURL: `${baseURL}${redirectTo}`
-                })
-            }
+          sessionStorage.setItem("better-auth-ui.verify-email", email)
+          navigate({
+            to: `${basePaths.auth}/${viewPaths.auth.verifyEmail}`
           })
-        } else {
-          toast.error(error.error?.message || error.message)
         }
 
         resetFetchOptions()
       },
-      onSuccess: () => navigate({ to: redirectTo })
+      onSuccess: () => {
+        sessionStorage.removeItem("better-auth-ui.verify-email")
+        navigate({ to: redirectTo })
+      }
     })
 
   const { mutate: signInUsername, isPending: isSignInUsernamePending } =
     useSignInUsername(authClient as UsernameAuthClient, {
       onError: (error) => {
         setPassword("")
-        toast.error(error.error?.message || error.message)
+
+        if (error.error?.code === "EMAIL_NOT_VERIFIED") {
+          sessionStorage.removeItem("better-auth-ui.verify-email")
+
+          navigate({
+            to: `${basePaths.auth}/${viewPaths.auth.verifyEmail}`
+          })
+        }
+
         resetFetchOptions()
       },
-      onSuccess: () => navigate({ to: redirectTo })
+      onSuccess: () => {
+        sessionStorage.removeItem("better-auth-ui.verify-email")
+        navigate({ to: redirectTo })
+      }
     })
 
   const signInMutating = useIsMutating({
@@ -211,7 +207,7 @@ export function SignInUsername({
 
                       setFieldErrors((prev) => ({
                         ...prev,
-                        email: (e.target as HTMLInputElement).validationMessage
+                        email: localization.auth.fieldRequired
                       }))
                     }}
                     aria-invalid={!!fieldErrors.email}
@@ -244,11 +240,24 @@ export function SignInUsername({
                     disabled={isPending}
                     onInvalid={(e) => {
                       e.preventDefault()
+                      const el = e.target as HTMLInputElement
+                      const min = emailAndPassword?.minPasswordLength
+                      const max = emailAndPassword?.maxPasswordLength
+                      const msg = el.validity.valueMissing
+                        ? localization.auth.fieldRequired
+                        : el.validity.tooShort
+                          ? localization.auth.tooShort.replace(
+                              "{{min}}",
+                              String(min)
+                            )
+                          : localization.auth.tooLong.replace(
+                              "{{max}}",
+                              String(max)
+                            )
 
                       setFieldErrors((prev) => ({
                         ...prev,
-                        password: (e.target as HTMLInputElement)
-                          .validationMessage
+                        password: msg
                       }))
                     }}
                     aria-invalid={!!fieldErrors.password}
@@ -316,7 +325,7 @@ export function SignInUsername({
         </div>
 
         <div className="flex flex-col gap-3 items-center w-full mt-4">
-          {emailAndPassword?.forgotPassword && (
+          {emailAndPassword?.enabled && emailAndPassword?.forgotPassword && (
             <Link
               href={`${basePaths.auth}/${viewPaths.auth.forgotPassword}`}
               className="self-center text-sm underline-offset-4 hover:underline"

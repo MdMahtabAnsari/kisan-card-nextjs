@@ -6,7 +6,7 @@ import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { passkeyPlugin } from "@/lib/auth/plugins/passkey-plugin"
+import { passkeyPlugin } from "@/lib/auth/passkey-plugin"
 
 import {
   DeletePasskeyDialog,
@@ -45,7 +45,7 @@ export function Passkey({ passkey }: PasskeyProps) {
         </div>
 
         <Button
-          className="ml-auto shrink-0"
+          className="ms-auto shrink-0"
           variant="outline"
           size="sm"
           onClick={() => setDeleteOpen(true)}

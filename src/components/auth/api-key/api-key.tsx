@@ -10,14 +10,18 @@ import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { apiKeyPlugin } from "@/lib/auth/plugins/api-key-plugin"
+import { apiKeyPlugin } from "@/lib/auth/api-key-plugin"
 import { DeleteApiKeyDialog } from "./delete-api-key-dialog"
 
 export type ApiKeyProps = {
   apiKey: ListedApiKey
+  /** Hide the row's delete button (e.g., when caller lacks `apiKey:delete`). */
+  hideDelete?: boolean
+  /** Scope the delete payload to an organization (sets `configId`). */
+  organizationId?: string
 }
 
-export function ApiKey({ apiKey }: ApiKeyProps) {
+export function ApiKey({ apiKey, hideDelete, organizationId }: ApiKeyProps) {
   const { localization } = useAuth()
   const { localization: apiKeyLocalization } = useAuthPlugin(apiKeyPlugin)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -48,23 +52,28 @@ export function ApiKey({ apiKey }: ApiKeyProps) {
           </span>
         </div>
 
-        <Button
-          className="ml-auto shrink-0"
-          variant="outline"
-          size="sm"
-          onClick={() => setDeleteOpen(true)}
-          aria-label={apiKeyLocalization.deleteApiKey}
-        >
-          <X />
+        {!hideDelete && (
+          <>
+            <Button
+              className="ms-auto shrink-0"
+              variant="outline"
+              size="sm"
+              onClick={() => setDeleteOpen(true)}
+              aria-label={apiKeyLocalization.deleteApiKey}
+            >
+              <X />
 
-          {localization.settings.delete}
-        </Button>
+              {localization.settings.delete}
+            </Button>
 
-        <DeleteApiKeyDialog
-          open={deleteOpen}
-          onOpenChange={setDeleteOpen}
-          apiKey={apiKey}
-        />
+            <DeleteApiKeyDialog
+              open={deleteOpen}
+              onOpenChange={setDeleteOpen}
+              apiKey={apiKey}
+              organizationId={organizationId}
+            />
+          </>
+        )}
       </CardContent>
     </Card>
   )

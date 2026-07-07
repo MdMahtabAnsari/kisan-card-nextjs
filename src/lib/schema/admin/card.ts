@@ -3,7 +3,9 @@ import {pageLimitSchema} from "@/lib/schema/common/page";
 import {CardType} from "@/generated/prisma/browser";
 import {StatusType} from "@/generated/prisma/browser";
 import { SortOrder } from "@/lib/types/sort";
+import { infiniteScroll } from "@/lib/schema/common/page";
 
+const cardNumber=z.string().length(16,"Card Number must have 16 digits").regex(/^\d+$/,"Card Number must contain only digits");
 
 export const filterCardSchema = z.object({
     pageLimit: pageLimitSchema,
@@ -21,7 +23,7 @@ export const filterCardSchema = z.object({
 export type FilterCardSchema = z.infer<typeof filterCardSchema>;
 
 export const createCardSchema = z.object({
-    cardNumber:z.string().length(16,"Card Number must have 16 digits").regex(/^\d+$/,"Card Number must contain only digits"),
+    cardNumber,
     cardHolder: z.string().min(1,"Card Holder name is required"),
     type: z.enum(CardType),
     points: z.string().regex(/^\d+(\.\d{1,2})?$/,"Points must be a valid decimal number with up to 2 decimal places").refine((value) => {
@@ -33,3 +35,13 @@ export const createCardSchema = z.object({
 })
 
 export type CreateCardForm = z.infer<typeof createCardSchema>;
+
+export const filterCardInfiniteScrollSchema = filterCardSchema.omit({ pageLimit: true }).extend(infiniteScroll.shape);
+export type FilterCardInfiniteScrollSchema = z.infer<typeof filterCardInfiniteScrollSchema>;
+
+export const cardByIdOrNumberSchema = z.union([
+    cardNumber,
+    z.uuid()
+])
+
+export type CardByIdOrNumberSchema = z.infer<typeof cardByIdOrNumberSchema>;

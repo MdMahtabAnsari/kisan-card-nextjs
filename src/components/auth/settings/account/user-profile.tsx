@@ -85,7 +85,7 @@ export function UserProfile({ className }: UserProfileProps) {
   return (
     <div>
       <h2 className="text-sm font-semibold mb-3">
-        {localization.settings.profile}
+        {localization.settings.userProfile}
       </h2>
 
       <form onSubmit={handleSubmit}>

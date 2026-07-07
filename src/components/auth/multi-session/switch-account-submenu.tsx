@@ -1,13 +1,13 @@
 "use client"
 
 import { useAuth, useAuthPlugin, useSession } from "@better-auth-ui/react"
-import { UsersRound } from "lucide-react"
+import { ArrowLeftRight } from "lucide-react"
 
 import {
   DropdownMenuSub,
   DropdownMenuSubTrigger
 } from "@/components/ui/dropdown-menu"
-import { multiSessionPlugin } from "@/lib/auth/plugins/multi-session-plugin"
+import { multiSessionPlugin } from "@/lib/auth/multi-session-plugin"
 import { SwitchAccountSubmenuContent } from "./switch-account-submenu-content"
 
 export type SwitchAccountSubmenuProps = {
@@ -37,7 +37,7 @@ export function SwitchAccountSubmenu({ className }: SwitchAccountSubmenuProps) {
   return (
     <DropdownMenuSub>
       <DropdownMenuSubTrigger className={className}>
-        <UsersRound className="text-muted-foreground" />
+        <ArrowLeftRight className="text-muted-foreground" />
 
         {multiSessionLocalization.switchAccount}
       </DropdownMenuSubTrigger>
